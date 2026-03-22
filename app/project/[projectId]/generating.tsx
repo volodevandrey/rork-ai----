@@ -106,6 +106,7 @@ export default function GenerationScreen() {
         strictness,
         variantCount,
         referenceBase64,
+        referenceMimeType: referenceVariant?.image.mimeType,
         referenceVariantTitle: referenceVariant?.title,
         onProgress: (stage, step, totalSteps) => {
           setProgress({ stage, step, totalSteps });

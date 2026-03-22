@@ -6,9 +6,9 @@ import {
 } from "@/types/app";
 import { getStyleTitle, getZoneTitle } from "@/constants/design";
 
-const photoSystemPrompt = `You are editing a real furniture photo. Hard rule: preserve camera angle, perspective, furniture structure, proportions, module count, room architecture, appliance placement and all object boundaries. Never redesign the scene. Never add, remove, move or reshape furniture modules. Only update allowed appearance properties such as cabinet fronts, colors, materials, textures, countertop, backsplash, decorative trim and subtle lighting cleanup. If any conflict exists, preserving geometry wins.`;
+const photoSystemPrompt = `You are editing a real furniture photo. Hard rule: preserve camera angle, perspective, furniture structure, proportions, module count, room architecture, appliance placement and all object boundaries. Never redesign the scene. Never add, remove, move or reshape furniture modules. Only update allowed appearance properties such as cabinet fronts, colors, materials, textures, countertop, backsplash, decorative trim and subtle lighting cleanup. First identify all furniture elements in the photo before making any changes. If any conflict exists, preserving geometry wins.`;
 
-const sketchSystemPrompt = `You are transforming a furniture sketch or drawing into a photorealistic interior image. Hard rule: preserve original configuration, camera angle, perspective, module count, proportions and placement. Do not redesign the furniture. Create a premium realistic render with believable materials, lighting, shadows and depth. If any conflict exists, preserving geometry wins.`;
+const sketchSystemPrompt = `You are transforming a furniture sketch or drawing into a photorealistic interior image. Hard rule: preserve original configuration, camera angle, perspective, module count, proportions and placement. Do not redesign the furniture. First carefully analyze the sketch to identify ALL furniture pieces, their positions, sizes and relationships. Then render each piece photorealistically. Create a premium realistic render with believable materials, lighting, shadows and depth. If any conflict exists, preserving geometry wins.`;
 
 const strictnessLabels: Record<Strictness, string> = {
   standard: "Сохраняй форму внимательно",
