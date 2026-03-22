@@ -18,6 +18,11 @@ export default function NewProjectScreen() {
   const { createProject } = useAppData();
   const [mode, setMode] = useState<ProjectMode>("photo");
 
+  const sourceHint =
+    mode === "photo"
+      ? "Совет: снимайте при дневном свете, держите телефон ровно, вся мебель должна быть в кадре — это даёт лучший результат"
+      : "Совет: чем чище и чётче эскиз, тем точнее результат. Подойдёт фото чертежа или рисунок от руки";
+
   const sourceMutation = useMutation({
     mutationFn: async (source: "library" | "camera") => {
       const image =
@@ -81,6 +86,9 @@ export default function NewProjectScreen() {
       </SectionCard>
 
       <SectionCard title="Источник изображения" subtitle="Поддерживается галерея и камера">
+        <Text style={styles.sourceHint} testID="source-hint">
+          {sourceHint}
+        </Text>
         <View style={styles.actions}>
           <AppButton
             disabled={sourceMutation.isPending}
@@ -118,5 +126,11 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 12,
+  },
+  sourceHint: {
+    color: theme.colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 14,
   },
 });

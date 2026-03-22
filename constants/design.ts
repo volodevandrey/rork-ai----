@@ -58,6 +58,11 @@ export const zoneOptions: Array<{ id: ChangeZone; title: string }> = [
   { id: "backsplash", title: "Только фартук" },
   { id: "facades-countertop", title: "Фасады и столешницу" },
   { id: "all", title: "Всё вместе" },
+  { id: "walls", title: "Только стены / обои" },
+  { id: "floor", title: "Только пол" },
+  { id: "ceiling", title: "Только потолок" },
+  { id: "walls-furniture", title: "Стены и мебель" },
+  { id: "full-room", title: "Весь интерьер целиком" },
 ];
 
 export const beautifulSuggestions: Record<ProjectMode, string[]> = {

@@ -5,7 +5,12 @@ export type ChangeZone =
   | "countertop"
   | "backsplash"
   | "facades-countertop"
-  | "all";
+  | "all"
+  | "walls"
+  | "floor"
+  | "ceiling"
+  | "walls-furniture"
+  | "full-room";
 
 export type Strictness = "standard" | "strict" | "maximum";
 

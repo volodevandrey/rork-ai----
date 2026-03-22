@@ -6,9 +6,9 @@ import {
 } from "@/types/app";
 import { getStyleTitle, getZoneTitle } from "@/constants/design";
 
-const photoSystemPrompt = `You are editing a real furniture photo. Hard rule: preserve camera angle, perspective, furniture structure, proportions, module count, room architecture, appliance placement and all object boundaries. Never redesign the scene. Never add, remove, move or reshape furniture modules. Only update allowed appearance properties such as cabinet fronts, colors, materials, textures, countertop, backsplash, decorative trim and subtle lighting cleanup. First identify all furniture elements in the photo before making any changes. If any conflict exists, preserving geometry wins.`;
+const photoSystemPrompt = `You are editing a real furniture photo. Hard rule: preserve camera angle, perspective, furniture structure, proportions, module count, room architecture, appliance placement and all object boundaries. Never redesign the scene. Never add, remove, move or reshape furniture modules. Only update allowed appearance properties such as cabinet fronts, colors, materials, textures, countertop, backsplash, decorative trim and subtle lighting cleanup. First identify all furniture elements in the photo before making any changes. If any conflict exists, preserving geometry wins. Final result must look like a real photograph taken on iPhone 17 Pro. Use natural daylight, realistic shadows, real material textures, subtle depth of field. Zero AI artifacts, zero plastic look, zero overly perfect CGI feeling. It must be indistinguishable from a real photo.`;
 
-const sketchSystemPrompt = `You are transforming a furniture sketch or drawing into a photorealistic interior image. Hard rule: preserve original configuration, camera angle, perspective, module count, proportions and placement. Do not redesign the furniture. First carefully analyze the sketch to identify ALL furniture pieces, their positions, sizes and relationships. Then render each piece photorealistically. Create a premium realistic render with believable materials, lighting, shadows and depth. If any conflict exists, preserving geometry wins.`;
+const sketchSystemPrompt = `You are transforming a furniture sketch or drawing into a photorealistic interior image. Hard rule: preserve original configuration, camera angle, perspective, module count, proportions and placement. Do not redesign the furniture. First carefully analyze the sketch to identify ALL furniture pieces, their positions, sizes and relationships. Then render each piece photorealistically. Create a premium realistic render with believable materials, lighting, shadows and depth. If any conflict exists, preserving geometry wins. Final result must look like a real photograph taken on iPhone 17 Pro. Use natural daylight, realistic shadows, real material textures, subtle depth of field. Zero AI artifacts, zero plastic look, zero overly perfect CGI feeling. It must be indistinguishable from a real photo.`;
 
 const strictnessLabels: Record<Strictness, string> = {
   standard: "Сохраняй форму внимательно",
@@ -56,7 +56,20 @@ function getStyleInstruction(styleId: StylePresetId | null): string {
 }
 
 function getZoneInstruction(zone: ChangeZone): string {
-  return `Зона изменения: ${getZoneTitle(zone)}.`;
+  const instructions: Record<ChangeZone, string> = {
+    facades: "Change ONLY cabinet facades and visible front finishes. Keep countertop, backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
+    countertop: "Change ONLY the countertop. Keep cabinet fronts, backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
+    backsplash: "Change ONLY the backsplash. Keep cabinet fronts, countertop, walls, floor, ceiling and all furniture geometry exactly as is.",
+    "facades-countertop": "Change ONLY cabinet facades and countertop. Keep backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
+    all: "Change all allowed visible finishes in the current interior while preserving layout, room architecture, object positions and geometry exactly as is.",
+    walls: "Change ONLY walls and wallpaper. Keep all furniture, floor and ceiling exactly as is.",
+    floor: "Change ONLY the floor covering. Keep all furniture, walls and ceiling exactly as is.",
+    ceiling: "Change ONLY the ceiling. Keep furniture, walls and floor exactly as is.",
+    "walls-furniture": "Change walls and furniture only. Keep floor and ceiling exactly as is.",
+    "full-room": "Transform entire room: walls, floor, ceiling and furniture in one cohesive style.",
+  };
+
+  return `Зона изменения: ${getZoneTitle(zone)}. ${instructions[zone]}`;
 }
 
 export function buildVariantPrompt(params: {
