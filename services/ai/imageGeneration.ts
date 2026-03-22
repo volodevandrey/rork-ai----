@@ -1,6 +1,13 @@
 import { buildVariantPrompt, getVariantStrategies } from "@/services/ai/promptBuilder";
 import { persistBase64Image } from "@/services/storage/fileStorage";
-import { ImageQuality, ProjectItem, Strictness, VariantCount, VariantItem } from "@/types/app";
+import {
+  GenerationMode,
+  ImageQuality,
+  ProjectItem,
+  Strictness,
+  VariantCount,
+  VariantItem,
+} from "@/types/app";
 import { createId } from "@/utils/id";
 
 interface ToolkitImageEditResponse {
@@ -266,6 +273,7 @@ async function requestVariant(params: {
   strictness: Strictness;
   strategyIndex: number;
   sourceBase64: string;
+  mode: GenerationMode;
   quality: ImageQuality;
   referenceBase64?: string;
   referenceVariantTitle?: string;
@@ -275,6 +283,7 @@ async function requestVariant(params: {
     strictness,
     strategyIndex,
     sourceBase64,
+    mode,
     quality,
     referenceBase64,
     referenceVariantTitle,
@@ -291,7 +300,7 @@ async function requestVariant(params: {
     throw new Error("Стратегия генерации не найдена.");
   }
 
-  if (process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
+  if (mode === "pro" && process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
     try {
       return await requestOpenAIVariant({
         prompt,
@@ -323,6 +332,7 @@ export async function generateProjectVariants(params: {
   project: ProjectItem;
   sourceBase64: string;
   strictness: Strictness;
+  mode: GenerationMode;
   quality: ImageQuality;
   variantCount: VariantCount;
   referenceBase64?: string;
@@ -334,6 +344,7 @@ export async function generateProjectVariants(params: {
     project,
     sourceBase64,
     strictness,
+    mode,
     quality,
     variantCount,
     referenceBase64,
@@ -344,7 +355,7 @@ export async function generateProjectVariants(params: {
   const totalSteps = variantCount + 2;
 
   onProgress?.("Подготовка изображения", 1, totalSteps);
-  console.log("[imageGeneration] project start", project.id, project.mode, strictness, quality, variantCount);
+  console.log("[imageGeneration] project start", project.id, project.mode, mode, strictness, quality, variantCount);
 
   onProgress?.("Проверка сохранения формы", 2, totalSteps);
 
@@ -359,6 +370,7 @@ export async function generateProjectVariants(params: {
         strictness,
         strategyIndex: index,
         sourceBase64,
+        mode,
         quality,
         referenceBase64,
         referenceVariantTitle,

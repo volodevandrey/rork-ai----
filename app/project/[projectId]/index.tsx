@@ -25,7 +25,7 @@ import {
 } from "@/services/media/voiceService";
 import { getCost } from "@/services/storage/creditsService";
 import { useCreditsStore } from "@/stores/creditsStore";
-import { ImageQuality, VariantCount } from "@/types/app";
+import { GenerationMode, ImageQuality, VariantCount } from "@/types/app";
 import { createAutoProjectTitle } from "@/utils/format";
 import { getSingleParam } from "@/utils/routes";
 
@@ -43,6 +43,12 @@ const qualityOptions: Array<{
   { value: "medium", label: "Баланс · 2 кр/вар" },
   { value: "high", label: "Максимум · 4 кр/вар" },
 ];
+
+const qualitySummaryLabels: Record<ImageQuality, string> = {
+  low: "низкое качество",
+  medium: "среднее качество",
+  high: "высокое качество",
+};
 
 function appendSnippet(currentValue: string, snippet: string): string {
   const trimmedValue = currentValue.trim();
@@ -88,6 +94,16 @@ export default function ProjectDesignScreen() {
     }
 
     return getCost(project.quality, project.variantCount);
+  }, [project]);
+
+  const proSubtitle = useMemo(() => {
+    if (!project) {
+      return "";
+    }
+
+    const variantLabel = `${project.variantCount} ${project.variantCount === 1 ? "вариант" : "варианта"}`;
+    const qualityLabel = qualitySummaryLabels[project.quality];
+    return `${variantLabel} · ${qualityLabel}`;
   }, [project]);
 
   const handleDescriptionChange = useCallback(
@@ -178,54 +194,64 @@ export default function ProjectDesignScreen() {
     Alert.alert("Готово", "Шаблон сохранён.");
   }, [project, projectId, saveTemplateFromProject]);
 
-  const handleGenerate = useCallback(async () => {
-    if (!project) {
-      return;
-    }
+  const handleGenerate = useCallback(
+    async (mode: GenerationMode) => {
+      if (!project) {
+        return;
+      }
 
-    if (!project.description.trim() && !project.styleId) {
-      Alert.alert(
-        "Нужно уточнение",
-        `Опишите, что хотите изменить. Например: ${smartPromptExamples[0]}`,
-      );
-      return;
-    }
+      if (!project.description.trim() && !project.styleId) {
+        Alert.alert(
+          "Нужно уточнение",
+          `Опишите, что хотите изменить. Например: ${smartPromptExamples[0]}`,
+        );
+        return;
+      }
 
-    const availableCredits = loaded ? credits : await loadCredits();
+      if (mode === "pro") {
+        const availableCredits = loaded ? credits : await loadCredits();
 
-    if (availableCredits < cost) {
-      Alert.alert(
-        "Недостаточно кредитов",
-        `Нужно ${cost}, у вас ${availableCredits}.\nПополнить?`,
-        [
-          {
-            text: "Пополнить",
-            onPress: () => router.push("/shop"),
-          },
-          {
-            text: "Отмена",
-            style: "cancel",
-          },
-        ],
-      );
-      return;
-    }
+        if (availableCredits < cost) {
+          Alert.alert(
+            "Недостаточно кредитов",
+            `Нужно ${cost}, у вас ${availableCredits}.\nПополнить?`,
+            [
+              {
+                text: "Пополнить",
+                onPress: () => router.push("/shop"),
+              },
+              {
+                text: "Отмена",
+                style: "cancel",
+              },
+            ],
+          );
+          return;
+        }
+      }
 
-    updateProject(projectId, (current) => ({
-      ...current,
-      status: "generating",
-      lastError: null,
-    }));
+      updateProject(projectId, (current) => ({
+        ...current,
+        status: "generating",
+        lastError: null,
+      }));
 
-    router.push({
-      pathname: "/project/[projectId]/generating",
-      params: {
-        projectId,
-        quality: project.quality,
-        variantCount: String(project.variantCount),
-      },
-    });
-  }, [cost, credits, loadCredits, loaded, project, projectId, updateProject]);
+      router.push({
+        pathname: "/project/[projectId]/generating",
+        params: {
+          projectId,
+          mode,
+          ...(mode === "pro"
+            ? {
+                quality: project.quality,
+                variantCount: String(project.variantCount),
+              }
+            : {}),
+        },
+      });
+    },
+    [cost, credits, loadCredits, loaded, project, projectId, updateProject],
+  );
 
   if (!project) {
     return (
@@ -417,23 +443,27 @@ export default function ProjectDesignScreen() {
 
       {project.lastError ? (
         <SectionCard title="Нужна повторная попытка" subtitle={project.lastError}>
-          <AppButton
-            icon={<Sparkles color="#241B10" size={18} />}
-            label={`Создать варианты снова · ${cost} кр.`}
-            onPress={() => {
-              void handleGenerate();
-            }}
-            variant="primary"
-          />
+          <Text style={styles.helperText}>Попробуйте ещё раз — бесплатно или в pro режиме.</Text>
         </SectionCard>
       ) : null}
 
       <View style={styles.footerActions}>
         <AppButton
-          icon={<Sparkles color="#241B10" size={18} />}
-          label={`Создать варианты · ${cost} кр.`}
+          icon={<Sparkles color={theme.colors.text} size={18} />}
+          label="Попробовать бесплатно"
+          subtitle="1 вариант · низкое качество"
           onPress={() => {
-            void handleGenerate();
+            void handleGenerate("free");
+          }}
+          testId="generate-free"
+          variant="secondary"
+        />
+        <AppButton
+          icon={<Sparkles color="#241B10" size={18} />}
+          label={`Создать про · ${cost} кр.`}
+          subtitle={proSubtitle}
+          onPress={() => {
+            void handleGenerate("pro");
           }}
           testId="generate-variants"
         />

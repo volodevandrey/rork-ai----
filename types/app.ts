@@ -18,6 +18,8 @@ export type VariantCount = 1 | 2 | 4;
 
 export type ImageQuality = "low" | "medium" | "high";
 
+export type GenerationMode = "free" | "pro";
+
 export type ProjectStatus = "draft" | "generating" | "ready" | "error";
 
 export type StylePresetId =

@@ -5,6 +5,7 @@ import theme from "@/constants/theme";
 
 interface AppButtonProps {
   label: string;
+  subtitle?: string;
   onPress: () => void;
   variant?: "primary" | "secondary" | "ghost";
   icon?: ReactElement;
@@ -23,6 +24,7 @@ function renderIcon(icon?: ReactElement) {
 export function AppButton(props: AppButtonProps) {
   const {
     label,
+    subtitle,
     onPress,
     variant = "primary",
     icon,
@@ -46,15 +48,28 @@ export function AppButton(props: AppButtonProps) {
     >
       <View style={styles.content}>
         {icon ? <View style={styles.icon}>{renderIcon(icon)}</View> : null}
-        <Text
-          style={[
-            styles.label,
-            variant === "primary" ? styles.primaryLabel : styles.secondaryLabel,
-            variant === "ghost" ? styles.ghostLabel : null,
-          ]}
-        >
-          {label}
-        </Text>
+        <View style={styles.textWrap}>
+          <Text
+            style={[
+              styles.label,
+              variant === "primary" ? styles.primaryLabel : styles.secondaryLabel,
+              variant === "ghost" ? styles.ghostLabel : null,
+            ]}
+          >
+            {label}
+          </Text>
+          {subtitle ? (
+            <Text
+              style={[
+                styles.subtitle,
+                variant === "primary" ? styles.primarySubtitle : styles.secondarySubtitle,
+                variant === "ghost" ? styles.ghostSubtitle : null,
+              ]}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -66,6 +81,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.md,
     justifyContent: "center",
     paddingHorizontal: 18,
+    paddingVertical: 12,
     borderWidth: 1,
   },
   primary: {
@@ -97,9 +113,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  textWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    flexShrink: 1,
+  },
   label: {
     fontSize: 16,
     fontWeight: "700",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: "center",
   },
   primaryLabel: {
     color: "#241B10",
@@ -109,5 +137,14 @@ const styles = StyleSheet.create({
   },
   ghostLabel: {
     color: theme.colors.textSecondary,
+  },
+  primarySubtitle: {
+    color: "#5C4830",
+  },
+  secondarySubtitle: {
+    color: theme.colors.textSecondary,
+  },
+  ghostSubtitle: {
+    color: theme.colors.textMuted,
   },
 });

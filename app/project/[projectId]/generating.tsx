@@ -18,10 +18,16 @@ import { useAppData } from "@/providers/AppDataProvider";
 import { generateProjectVariants } from "@/services/ai/imageGeneration";
 import { readBase64FromUri } from "@/services/storage/fileStorage";
 import { useCreditsStore } from "@/stores/creditsStore";
-import { GenerationProgress, ImageQuality, Strictness, VariantCount } from "@/types/app";
+import {
+  GenerationMode,
+  GenerationProgress,
+  ImageQuality,
+  Strictness,
+  VariantCount,
+} from "@/types/app";
 import { getSingleParam } from "@/utils/routes";
 
-function parseStrictness(value: string, fallback: Strictness): Strictness {
+function parseStrictness(value: string | undefined, fallback: Strictness): Strictness {
   if (value === "standard" || value === "strict" || value === "maximum") {
     return value;
   }
@@ -53,6 +59,14 @@ function parseImageQuality(value: string | undefined, fallback: ImageQuality): I
   return fallback;
 }
 
+function parseGenerationMode(value: string | undefined): GenerationMode {
+  if (value === "free" || value === "pro") {
+    return value;
+  }
+
+  return "pro";
+}
+
 export default function GenerationScreen() {
   const params = useLocalSearchParams<{
     projectId: string | string[];
@@ -60,12 +74,14 @@ export default function GenerationScreen() {
     referenceVariantId?: string | string[];
     variantCount?: string | string[];
     quality?: string | string[];
+    mode?: string | string[];
   }>();
   const projectId = getSingleParam(params.projectId);
   const strictnessParam = getSingleParam(params.strictness);
   const referenceVariantId = getSingleParam(params.referenceVariantId);
   const variantCountParam = getSingleParam(params.variantCount);
   const qualityParam = getSingleParam(params.quality);
+  const modeParam = getSingleParam(params.mode);
   const { getProject, saveGeneratedVariants, updateProject } = useAppData();
   const spendCredits = useCreditsStore((state) => state.spendCredits);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
@@ -73,15 +89,26 @@ export default function GenerationScreen() {
   const fallbackStrictness = project?.mode === "photo" ? "maximum" : "strict";
   const fallbackVariantCount = project?.variantCount ?? 2;
   const fallbackQuality = project?.quality ?? "medium";
+  const mode = useMemo(() => {
+    return parseGenerationMode(modeParam);
+  }, [modeParam]);
   const strictness = useMemo(() => {
     return parseStrictness(strictnessParam, fallbackStrictness);
   }, [fallbackStrictness, strictnessParam]);
   const variantCount = useMemo(() => {
+    if (mode === "free") {
+      return 1;
+    }
+
     return parseVariantCount(variantCountParam, fallbackVariantCount);
-  }, [fallbackVariantCount, variantCountParam]);
+  }, [fallbackVariantCount, mode, variantCountParam]);
   const quality = useMemo(() => {
+    if (mode === "free") {
+      return "low";
+    }
+
     return parseImageQuality(qualityParam, fallbackQuality);
-  }, [fallbackQuality, qualityParam]);
+  }, [fallbackQuality, mode, qualityParam]);
   const [progress, setProgress] = useState<GenerationProgress>({
     stage: "Подготовка изображения",
     step: 1,
@@ -125,7 +152,9 @@ export default function GenerationScreen() {
         throw new Error("Проект не найден.");
       }
 
-      await spendCredits(quality, variantCount);
+      if (mode === "pro") {
+        await spendCredits(quality, variantCount);
+      }
 
       const sourceBase64 = await readBase64FromUri(project.sourceImage.uri);
       const referenceVariant = project.variants.find((item) => item.id === referenceVariantId) ?? null;
@@ -135,6 +164,7 @@ export default function GenerationScreen() {
         project,
         sourceBase64,
         strictness,
+        mode,
         quality,
         variantCount,
         referenceBase64,
