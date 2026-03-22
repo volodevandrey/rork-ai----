@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface SectionCardProps {
   title: string;
@@ -27,21 +27,21 @@ const styles = StyleSheet.create({
   card: {
     gap: 16,
     padding: 18,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   header: {
     gap: 6,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 17,
     fontWeight: "700",
   },
   subtitle: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },

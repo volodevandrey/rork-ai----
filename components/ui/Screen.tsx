@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Edge, SafeAreaView } from "react-native-safe-area-context";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface AppScrollScreenProps {
   children: ReactNode;
@@ -32,9 +32,9 @@ export function AppScrollScreen(props: AppScrollScreenProps) {
     <View style={styles.root} testID={testId}>
       <LinearGradient
         colors={[
-          theme.colors.background,
-          theme.colors.backgroundElevated,
-          theme.colors.background,
+          appTheme.colors.background,
+          appTheme.colors.backgroundElevated,
+          appTheme.colors.background,
         ]}
         style={StyleSheet.absoluteFill}
       />
@@ -57,9 +57,9 @@ export function AppViewScreen(props: AppViewScreenProps) {
     <View style={styles.root} testID={testId}>
       <LinearGradient
         colors={[
-          theme.colors.background,
-          theme.colors.backgroundElevated,
-          theme.colors.background,
+          appTheme.colors.background,
+          appTheme.colors.backgroundElevated,
+          appTheme.colors.background,
         ]}
         style={StyleSheet.absoluteFill}
       />
@@ -73,7 +73,7 @@ export function AppViewScreen(props: AppViewScreenProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: appTheme.colors.background,
   },
   safeArea: {
     flex: 1,

@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useCreditsStore } from "@/stores/creditsStore";
 
 export default function SettingsScreen() {
@@ -25,7 +25,7 @@ export default function SettingsScreen() {
           <Text style={styles.creditsHint}>Medium качество стоит 2 кредита за вариант.</Text>
         </View>
         <AppButton
-          icon={<Coins color={theme.colors.text} size={18} />}
+          icon={<Coins color={appTheme.colors.text} size={18} />}
           label="Пополнить кредиты"
           onPress={() => router.push("/shop")}
           testId="open-shop"
@@ -70,42 +70,42 @@ const styles = StyleSheet.create({
   creditsCard: {
     gap: 6,
     padding: 16,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   creditsLabel: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 13,
     fontWeight: "600",
   },
   creditsValue: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 30,
     fontWeight: "800",
   },
   creditsHint: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 14,
     lineHeight: 20,
   },
   ruleCard: {
     gap: 8,
     padding: 16,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   ruleTitle: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 17,
     fontWeight: "700",
   },
   ruleText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
   bodyText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   listItem: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },

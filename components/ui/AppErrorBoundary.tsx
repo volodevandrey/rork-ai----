@@ -1,7 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -60,7 +60,7 @@ export class AppErrorBoundary extends Component<
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: appTheme.colors.background,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -69,26 +69,26 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     padding: 24,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
     gap: 14,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 24,
     fontWeight: "700",
   },
   description: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
   button: {
     minHeight: 50,
-    borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.accent,
+    borderRadius: appTheme.radii.md,
+    backgroundColor: appTheme.colors.accent,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 18,

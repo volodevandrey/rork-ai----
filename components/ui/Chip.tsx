@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface ChipProps {
   label: string;
@@ -31,24 +31,24 @@ const styles = StyleSheet.create({
   base: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: theme.radii.pill,
+    borderRadius: appTheme.radii.pill,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surface,
   },
   selected: {
-    backgroundColor: theme.colors.accentSoft,
-    borderColor: theme.colors.accent,
+    backgroundColor: appTheme.colors.accentSoft,
+    borderColor: appTheme.colors.accent,
   },
   pressed: {
     opacity: 0.9,
   },
   label: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
   selectedLabel: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
   },
 });

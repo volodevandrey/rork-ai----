@@ -11,7 +11,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppTextField } from "@/components/ui/AppTextField";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { inpaintFurniture } from "@/services/ai/imageGeneration";
 import { readBase64FromUri } from "@/services/storage/fileStorage";
@@ -391,7 +391,7 @@ export default function InpaintScreen() {
                       d={path.d}
                       fill="none"
                       key={path.id}
-                      stroke={theme.colors.accentStrong}
+                      stroke={appTheme.colors.accentStrong}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={brushPreviewWidth}
@@ -445,7 +445,7 @@ export default function InpaintScreen() {
         />
         {submitMutation.isPending ? (
           <View style={styles.loadingRow}>
-            <ActivityIndicator color={theme.colors.accentStrong} size="small" />
+            <ActivityIndicator color={appTheme.colors.accentStrong} size="small" />
             <Text style={styles.loadingText}>AI аккуратно вписывает новую мебель в сцену.</Text>
           </View>
         ) : null}
@@ -497,16 +497,16 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   canvasShell: {
-    borderRadius: theme.radii.xl,
+    borderRadius: appTheme.radii.xl,
     overflow: "hidden",
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: appTheme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   canvasFrame: {
     width: "100%",
     position: "relative",
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   canvasShade: {
     ...StyleSheet.absoluteFillObject,
@@ -522,17 +522,17 @@ const styles = StyleSheet.create({
     bottom: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.overlay,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.overlay,
     gap: 4,
   },
   helperBubbleTitle: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 14,
     fontWeight: "700",
   },
   helperBubbleText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -542,11 +542,11 @@ const styles = StyleSheet.create({
     right: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.overlay,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.overlay,
   },
   maskBadgeText: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     flex: 1,
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },

@@ -7,7 +7,7 @@ import { ResultCard } from "@/components/cards/ResultCard";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { saveImageToGallery, shareImage } from "@/services/actions/exportService";
 import { VariantItem } from "@/types/app";
@@ -150,28 +150,28 @@ export default function ResultsScreen() {
         subtitle="Сравнивайте версии, сохраняйте лучший результат и показывайте клиенту"
       >
         <View style={styles.banner}>
-          <ShieldCheck color={theme.colors.accentStrong} size={18} />
+          <ShieldCheck color={appTheme.colors.accentStrong} size={18} />
           <Text style={styles.bannerText}>
             Если форма мебели поехала, используйте кнопку «Перегенерировать без изменения формы».
           </Text>
         </View>
         <View style={styles.topActions}>
           <AppButton
-            icon={<ShieldCheck color={theme.colors.text} size={18} />}
+            icon={<ShieldCheck color={appTheme.colors.text} size={18} />}
             label="Перегенерировать без изменения формы"
             onPress={handleRegenerateStrict}
             testId="regenerate-strict"
             variant="secondary"
           />
           <AppButton
-            icon={<Bookmark color={theme.colors.text} size={18} />}
+            icon={<Bookmark color={appTheme.colors.text} size={18} />}
             label="Сохранить шаблон"
             onPress={handleSaveTemplate}
             testId="results-save-template"
             variant="secondary"
           />
           <AppButton
-            icon={<Edit3 color={theme.colors.text} size={18} />}
+            icon={<Edit3 color={appTheme.colors.text} size={18} />}
             label="Изменить описание"
             onPress={handleTryAgain}
             testId="edit-project"
@@ -197,7 +197,7 @@ export default function ResultsScreen() {
               variant={variant}
             />
             <AppButton
-              icon={<Edit3 color={theme.colors.text} size={18} />}
+              icon={<Edit3 color={appTheme.colors.text} size={18} />}
               label="Дорисовать мебель"
               onPress={() => handleInpaint(variant)}
               testId={`variant-${variant.id}-inpaint`}
@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
     padding: 14,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   bannerText: {
     flex: 1,
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   helperText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },

@@ -1,7 +1,7 @@
 import { Link, Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 export default function NotFoundScreen() {
   return (
@@ -28,25 +28,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
-    backgroundColor: theme.colors.background,
+    backgroundColor: appTheme.colors.background,
   },
   card: {
     width: "100%",
     maxWidth: 360,
     gap: 12,
     padding: 24,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 22,
     fontWeight: "700",
   },
   description: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   linkText: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 16,
     fontWeight: "700",
   },

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AppErrorBoundary } from "@/components/ui/AppErrorBoundary";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { AppDataProvider } from "@/providers/AppDataProvider";
 import { useCreditsStore } from "@/stores/creditsStore";
 
@@ -19,16 +19,16 @@ function RootLayoutNav() {
       screenOptions={{
         headerBackTitle: "Назад",
         headerStyle: {
-          backgroundColor: theme.colors.background,
+          backgroundColor: appTheme.colors.background,
         },
         headerShadowVisible: false,
-        headerTintColor: theme.colors.text,
+        headerTintColor: appTheme.colors.text,
         headerTitleStyle: {
-          color: theme.colors.text,
+          color: appTheme.colors.text,
           fontWeight: "700",
         },
         contentStyle: {
-          backgroundColor: theme.colors.background,
+          backgroundColor: appTheme.colors.background,
         },
       }}
     >

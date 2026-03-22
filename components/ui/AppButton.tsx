@@ -1,7 +1,7 @@
 import { ReactElement, isValidElement } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface AppButtonProps {
   label: string;
@@ -78,23 +78,23 @@ export function AppButton(props: AppButtonProps) {
 const styles = StyleSheet.create({
   base: {
     minHeight: 54,
-    borderRadius: theme.radii.md,
+    borderRadius: appTheme.radii.md,
     justifyContent: "center",
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderWidth: 1,
   },
   primary: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
+    backgroundColor: appTheme.colors.accent,
+    borderColor: appTheme.colors.accent,
   },
   secondary: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
+    backgroundColor: appTheme.colors.surface,
+    borderColor: appTheme.colors.border,
   },
   ghost: {
     backgroundColor: "transparent",
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   pressed: {
     opacity: 0.88,
@@ -133,18 +133,18 @@ const styles = StyleSheet.create({
     color: "#241B10",
   },
   secondaryLabel: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
   },
   ghostLabel: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
   },
   primarySubtitle: {
     color: "#5C4830",
   },
   secondarySubtitle: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
   },
   ghostSubtitle: {
-    color: theme.colors.textMuted,
+    color: appTheme.colors.textMuted,
   },
 });

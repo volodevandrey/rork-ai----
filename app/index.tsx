@@ -8,7 +8,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { appCopy, getModeTitle } from "@/constants/design";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { loadOnboardingShown, saveOnboardingShown } from "@/services/storage/appStorage";
 import { useCreditsStore } from "@/stores/creditsStore";
@@ -20,7 +20,7 @@ export default function HomeScreen() {
   const recentProject = projects[0] ?? null;
   const isEmptyBalance = credits === 0;
   const isLowBalance = credits > 0 && credits <= 5;
-  const balanceColor = isEmptyBalance ? theme.colors.danger : isLowBalance ? "#F2A65A" : theme.colors.accentStrong;
+  const balanceColor = isEmptyBalance ? appTheme.colors.danger : isLowBalance ? "#F2A65A" : appTheme.colors.accentStrong;
   const balanceIcon = isLowBalance ? "⚠" : "✦";
   const balanceLabel = isLowBalance ? `Осталось ${credits} кредитов` : `${credits} кредитов`;
 
@@ -63,7 +63,7 @@ export default function HomeScreen() {
     <AppScrollScreen contentContainerStyle={styles.content} safeAreaEdges={["top"]} testId="home-screen">
       <View style={styles.hero}>
         <View style={styles.heroBadge}>
-          <Sparkles color={theme.colors.accentStrong} size={16} />
+          <Sparkles color={appTheme.colors.accentStrong} size={16} />
           <Text style={styles.heroBadgeText}>Точная визуализация мебели</Text>
         </View>
         <Text style={styles.title}>{appCopy.title}</Text>
@@ -94,21 +94,21 @@ export default function HomeScreen() {
       <SectionCard title="Разделы" subtitle="Быстрый доступ к основным экранам">
         <View style={styles.buttonStack}>
           <AppButton
-            icon={<LayoutTemplate color={theme.colors.text} size={18} />}
+            icon={<LayoutTemplate color={appTheme.colors.text} size={18} />}
             label="Шаблоны"
             onPress={() => router.push("/templates")}
             variant="secondary"
             testId="home-templates"
           />
           <AppButton
-            icon={<FolderOpen color={theme.colors.text} size={18} />}
+            icon={<FolderOpen color={appTheme.colors.text} size={18} />}
             label="Мои проекты"
             onPress={() => router.push("/projects")}
             variant="secondary"
             testId="home-projects"
           />
           <AppButton
-            icon={<Settings color={theme.colors.text} size={18} />}
+            icon={<Settings color={appTheme.colors.text} size={18} />}
             label="Настройки"
             onPress={() => router.push("/settings")}
             variant="secondary"
@@ -174,11 +174,11 @@ const styles = StyleSheet.create({
   hero: {
     gap: 16,
     padding: 24,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadow,
+    borderColor: appTheme.colors.border,
+    ...appTheme.shadow,
   },
   heroBadge: {
     alignSelf: "flex-start",
@@ -187,16 +187,16 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   heroBadgeText: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 13,
     fontWeight: "700",
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 34,
     lineHeight: 40,
     fontWeight: "800",
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   balanceIcon: {
     fontSize: 13,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   balanceLink: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 13,
     fontWeight: "700",
     textDecorationLine: "underline",
@@ -230,23 +230,23 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   subtitle: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 16,
     lineHeight: 24,
   },
   ruleCard: {
     gap: 6,
     padding: 16,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   ruleTitle: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 15,
     fontWeight: "700",
   },
   ruleText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
   },
   buttonStack: {
@@ -258,29 +258,29 @@ const styles = StyleSheet.create({
   projectImage: {
     width: "100%",
     height: 210,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   projectBody: {
     gap: 10,
   },
   projectTitle: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 18,
     fontWeight: "700",
   },
   projectMeta: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 13,
     fontWeight: "600",
   },
   projectDescription: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
   emptyText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -292,18 +292,18 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
     padding: 16,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   metricValue: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 26,
     fontWeight: "800",
   },
   metricLabel: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
   },
 });

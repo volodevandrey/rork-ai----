@@ -9,7 +9,7 @@ import { BrandedResultImage } from "@/components/results/BrandedResultImage";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { saveImageToGallery, shareImage } from "@/services/actions/exportService";
 import { getSingleParam } from "@/utils/routes";
@@ -128,7 +128,7 @@ export default function CompareScreen() {
       </SectionCard>
       <View style={styles.actions}>
         <AppButton
-          icon={<Save color={theme.colors.text} size={18} />}
+          icon={<Save color={appTheme.colors.text} size={18} />}
           label="Сохранить в галерею"
           onPress={() => {
             void handleSave();
@@ -136,7 +136,7 @@ export default function CompareScreen() {
           variant="secondary"
         />
         <AppButton
-          icon={<Share2 color={theme.colors.text} size={18} />}
+          icon={<Share2 color={appTheme.colors.text} size={18} />}
           label="Поделиться"
           onPress={() => {
             void handleShare();
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   helperText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },

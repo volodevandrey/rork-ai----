@@ -9,7 +9,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { getModeHint } from "@/constants/design";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { captureImage, pickImageFromLibrary } from "@/services/media/imageService";
 import { ProjectMode } from "@/types/app";
@@ -60,7 +60,7 @@ export default function NewProjectScreen() {
       >
         <View style={styles.modeList}>
           <ModeCard
-            icon={<ImageIcon color={theme.colors.accentStrong} size={22} />}
+            icon={<ImageIcon color={appTheme.colors.accentStrong} size={22} />}
             onPress={() => setMode("photo")}
             selected={mode === "photo"}
             subtitle="Точная перекраска и замена материалов без изменения формы и ракурса"
@@ -68,7 +68,7 @@ export default function NewProjectScreen() {
             title="Фото мебели"
           />
           <ModeCard
-            icon={<PenTool color={theme.colors.accentStrong} size={22} />}
+            icon={<PenTool color={appTheme.colors.accentStrong} size={22} />}
             onPress={() => setMode("sketch")}
             selected={mode === "sketch"}
             subtitle="Преобразование эскиза в реалистичную визуализацию без изменения конфигурации"
@@ -99,7 +99,7 @@ export default function NewProjectScreen() {
           />
           <AppButton
             disabled={sourceMutation.isPending}
-            icon={<Camera color={theme.colors.text} size={18} />}
+            icon={<Camera color={appTheme.colors.text} size={18} />}
             label="Сделать фото"
             onPress={() => sourceMutation.mutate("camera")}
             testId="capture-image"
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   copy: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sourceHint: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 21,
     marginBottom: 14,

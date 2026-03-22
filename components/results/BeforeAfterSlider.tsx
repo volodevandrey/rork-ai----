@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface BeforeAfterSliderProps {
   beforeUri: string;
@@ -89,11 +89,11 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     height: 420,
-    borderRadius: theme.radii.xl,
+    borderRadius: appTheme.radii.xl,
     overflow: "hidden",
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: appTheme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   imageLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: theme.colors.text,
+    backgroundColor: appTheme.colors.text,
     marginLeft: -1,
     pointerEvents: "none",
     alignItems: "center",
@@ -125,10 +125,10 @@ const styles = StyleSheet.create({
   dividerHandle: {
     width: 36,
     height: 36,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.accent,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.accent,
     borderWidth: 2,
-    borderColor: theme.colors.text,
+    borderColor: appTheme.colors.text,
   },
   labelRow: {
     position: "absolute",
@@ -139,18 +139,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   labelPill: {
-    backgroundColor: theme.colors.overlay,
+    backgroundColor: appTheme.colors.overlay,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: theme.radii.pill,
+    borderRadius: appTheme.radii.pill,
   },
   labelText: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 13,
     fontWeight: "700",
   },
   helper: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     textAlign: "center",
     fontSize: 14,
   },

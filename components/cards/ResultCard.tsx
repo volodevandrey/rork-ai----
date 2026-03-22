@@ -5,7 +5,7 @@ import ViewShot from "react-native-view-shot";
 
 import { BrandedResultImage } from "@/components/results/BrandedResultImage";
 import { AppButton } from "@/components/ui/AppButton";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { VariantItem } from "@/types/app";
 
 interface ResultCardProps {
@@ -62,7 +62,7 @@ export function ResultCard(props: ResultCardProps) {
         <View style={styles.grid}>
           <View style={styles.actionCell}>
             <AppButton
-              icon={<ArrowLeftRight color={theme.colors.text} size={16} />}
+              icon={<ArrowLeftRight color={appTheme.colors.text} size={16} />}
               label="До / После"
               onPress={onCompare}
               testId={`${testId}-compare`}
@@ -71,7 +71,7 @@ export function ResultCard(props: ResultCardProps) {
           </View>
           <View style={styles.actionCell}>
             <AppButton
-              icon={<RefreshCcw color={theme.colors.text} size={16} />}
+              icon={<RefreshCcw color={appTheme.colors.text} size={16} />}
               label="Ещё варианты"
               onPress={onMore}
               testId={`${testId}-more`}
@@ -80,7 +80,7 @@ export function ResultCard(props: ResultCardProps) {
           </View>
           <View style={styles.actionCell}>
             <AppButton
-              icon={<Save color={theme.colors.text} size={16} />}
+              icon={<Save color={appTheme.colors.text} size={16} />}
               label="Сохранить в галерею"
               onPress={() => {
                 void handleSavePress();
@@ -91,7 +91,7 @@ export function ResultCard(props: ResultCardProps) {
           </View>
           <View style={styles.actionCell}>
             <AppButton
-              icon={<Share2 color={theme.colors.text} size={16} />}
+              icon={<Share2 color={appTheme.colors.text} size={16} />}
               label="Поделиться"
               onPress={() => {
                 void handleSharePress();
@@ -109,10 +109,10 @@ export function ResultCard(props: ResultCardProps) {
 const styles = StyleSheet.create({
   card: {
     overflow: "hidden",
-    borderRadius: theme.radii.xl,
+    borderRadius: appTheme.radii.xl,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surface,
   },
   image: {
     width: "100%",
@@ -126,12 +126,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 18,
     fontWeight: "700",
   },
   subtitle: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface AppTextFieldProps {
   label: string;
@@ -21,7 +21,7 @@ export function AppTextField(props: AppTextFieldProps) {
         multiline={multiline}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={theme.colors.textMuted}
+        placeholderTextColor={appTheme.colors.textMuted}
         style={[styles.input, multiline ? styles.multiline : null]}
         testID={testId}
         value={value}
@@ -35,16 +35,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   label: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 15,
     fontWeight: "700",
   },
   input: {
-    borderRadius: theme.radii.md,
+    borderRadius: appTheme.radii.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surface,
+    color: appTheme.colors.text,
     fontSize: 15,
     paddingHorizontal: 16,
     paddingVertical: 14,

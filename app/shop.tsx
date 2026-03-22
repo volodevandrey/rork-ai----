@@ -6,7 +6,7 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useCreditsStore } from "@/stores/creditsStore";
 
 interface CreditPackage {
@@ -72,7 +72,7 @@ export default function ShopScreen() {
 
       <View style={styles.heroCard}>
         <View style={styles.heroBadge}>
-          <Sparkles color={theme.colors.accentStrong} size={16} />
+          <Sparkles color={appTheme.colors.accentStrong} size={16} />
           <Text style={styles.heroBadgeText}>Баланс пополняется моментально</Text>
         </View>
         <Text style={styles.heroTitle}>Выберите пакет кредитов</Text>
@@ -116,11 +116,11 @@ export default function ShopScreen() {
 
               <View style={styles.benefitsList}>
                 <View style={styles.benefitRow}>
-                  <Check color={theme.colors.accentStrong} size={16} />
+                  <Check color={appTheme.colors.accentStrong} size={16} />
                   <Text style={styles.benefitText}>Мгновенное пополнение баланса</Text>
                 </View>
                 <View style={styles.benefitRow}>
-                  <Check color={theme.colors.accentStrong} size={16} />
+                  <Check color={appTheme.colors.accentStrong} size={16} />
                   <Text style={styles.benefitText}>Подходит для быстрых тестовых генераций</Text>
                 </View>
               </View>
@@ -148,11 +148,11 @@ const styles = StyleSheet.create({
   heroCard: {
     gap: 14,
     padding: 22,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadow,
+    borderColor: appTheme.colors.border,
+    ...appTheme.shadow,
   },
   heroBadge: {
     alignSelf: "flex-start",
@@ -161,39 +161,39 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   heroBadgeText: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 13,
     fontWeight: "700",
   },
   heroTitle: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 28,
     lineHeight: 34,
     fontWeight: "800",
   },
   heroSubtitle: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
   explainerCard: {
     gap: 8,
     padding: 16,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   explainerLine: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "600",
   },
   explainerFree: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "700",
@@ -201,14 +201,14 @@ const styles = StyleSheet.create({
   packageCard: {
     gap: 16,
     padding: 18,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   packageCardFeatured: {
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderColor: appTheme.colors.accent,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   packageHeader: {
     flexDirection: "row",
@@ -220,23 +220,23 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   packageCredits: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 24,
     fontWeight: "800",
   },
   packagePrice: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 15,
     fontWeight: "700",
   },
   featuredBadge: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.accentSoft,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.accentSoft,
   },
   featuredBadgeText: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 12,
     fontWeight: "800",
   },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     flex: 1,
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },

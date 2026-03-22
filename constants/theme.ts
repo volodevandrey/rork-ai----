@@ -1,4 +1,4 @@
-export const theme = {
+const appTheme = {
   colors: {
     background: "#0F0E0C",
     backgroundElevated: "#141210",
@@ -42,4 +42,4 @@ export const theme = {
   },
 };
 
-export default theme;
+export default appTheme;

@@ -6,7 +6,7 @@ import { ProjectCard } from "@/components/cards/ProjectCard";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 
 export default function ProjectsScreen() {
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   emptyText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },

@@ -1,7 +1,7 @@
 import { ReactElement, isValidElement } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface ModeCardProps {
   title: string;
@@ -43,15 +43,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 14,
     padding: 18,
-    borderRadius: theme.radii.lg,
+    borderRadius: appTheme.radii.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surface,
     alignItems: "center",
   },
   cardSelected: {
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.accentSoft,
+    borderColor: appTheme.colors.accent,
+    backgroundColor: appTheme.colors.accentSoft,
   },
   pressed: {
     opacity: 0.92,
@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 52,
     height: 52,
-    borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.md,
+    backgroundColor: appTheme.colors.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -72,12 +72,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 17,
     fontWeight: "700",
   },
   subtitle: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },

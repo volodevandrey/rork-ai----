@@ -3,7 +3,7 @@ import { StyleProp, StyleSheet, ViewStyle } from "react-native";
 import { Image } from "expo-image";
 import ViewShot, { CaptureOptions } from "react-native-view-shot";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 
 interface BrandedResultImageProps {
   uri: string;
@@ -47,7 +47,7 @@ BrandedResultImage.displayName = "BrandedResultImage";
 const styles = StyleSheet.create({
   frame: {
     overflow: "hidden",
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   image: {
     width: "100%",

@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { FolderOpen, Pencil, Trash2 } from "lucide-react-native";
 
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { getModeTitle } from "@/constants/design";
 import { ProjectItem } from "@/types/app";
 import { formatDate } from "@/utils/format";
@@ -41,7 +41,7 @@ export function ProjectCard(props: ProjectCardProps) {
             onBlur={onSaveName}
             onChangeText={onNameChange}
             placeholder="Название проекта"
-            placeholderTextColor={theme.colors.textMuted}
+            placeholderTextColor={appTheme.colors.textMuted}
             style={styles.input}
             value={draftName}
           />
@@ -54,15 +54,15 @@ export function ProjectCard(props: ProjectCardProps) {
         </Text>
         <View style={styles.actions}>
           <Pressable onPress={onOpen} style={styles.actionButton}>
-            <FolderOpen color={theme.colors.accentStrong} size={16} />
+            <FolderOpen color={appTheme.colors.accentStrong} size={16} />
             <Text style={styles.actionText}>Открыть</Text>
           </Pressable>
           <Pressable onPress={onStartEdit} style={styles.actionButton}>
-            <Pencil color={theme.colors.textSecondary} size={16} />
+            <Pencil color={appTheme.colors.textSecondary} size={16} />
             <Text style={styles.actionText}>Переименовать</Text>
           </Pressable>
           <Pressable onPress={onDelete} style={styles.actionButton}>
-            <Trash2 color={theme.colors.danger} size={16} />
+            <Trash2 color={appTheme.colors.danger} size={16} />
             <Text style={[styles.actionText, styles.deleteText]}>Удалить</Text>
           </Pressable>
         </View>
@@ -73,43 +73,43 @@ export function ProjectCard(props: ProjectCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: theme.radii.lg,
+    borderRadius: appTheme.radii.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surface,
     overflow: "hidden",
   },
   image: {
     width: "100%",
     height: 172,
-    backgroundColor: theme.colors.surfaceMuted,
+    backgroundColor: appTheme.colors.surfaceMuted,
   },
   body: {
     gap: 10,
     padding: 16,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 17,
     fontWeight: "700",
   },
   input: {
-    borderRadius: theme.radii.md,
+    borderRadius: appTheme.radii.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceAlt,
-    color: theme.colors.text,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surfaceAlt,
+    color: appTheme.colors.text,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
     fontWeight: "600",
   },
   meta: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 13,
   },
   description: {
-    color: theme.colors.textMuted,
+    color: appTheme.colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -124,15 +124,15 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   actionText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 13,
     fontWeight: "600",
   },
   deleteText: {
-    color: theme.colors.danger,
+    color: appTheme.colors.danger,
   },
 });

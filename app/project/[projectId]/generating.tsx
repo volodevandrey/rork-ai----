@@ -13,7 +13,7 @@ import {
 
 import { AppButton } from "@/components/ui/AppButton";
 import { AppViewScreen } from "@/components/ui/Screen";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { generateProjectVariants } from "@/services/ai/imageGeneration";
 import { readBase64FromUri } from "@/services/storage/fileStorage";
@@ -298,7 +298,7 @@ export default function GenerationScreen() {
         </View>
 
         <View style={styles.centerBlock}>
-          <ActivityIndicator color={theme.colors.accentStrong} size="large" />
+          <ActivityIndicator color={appTheme.colors.accentStrong} size="large" />
           <Text style={styles.title}>Создание вариантов дизайна...</Text>
           <Text style={styles.description}>
             Мы аккуратно обрабатываем изображение и сохраняем геометрию мебели.
@@ -345,10 +345,10 @@ const styles = StyleSheet.create({
   },
   previewWrap: {
     overflow: "hidden",
-    borderRadius: theme.radii.xl,
+    borderRadius: appTheme.radii.xl,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderColor: appTheme.colors.border,
+    backgroundColor: appTheme.colors.surface,
   },
   previewImage: {
     width: "100%",
@@ -364,9 +364,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.overlay,
-    color: theme.colors.text,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.overlay,
+    color: appTheme.colors.text,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -375,14 +375,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 28,
     lineHeight: 34,
     textAlign: "center",
     fontWeight: "800",
   },
   description: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
     textAlign: "center",
@@ -390,30 +390,30 @@ const styles = StyleSheet.create({
   progressCard: {
     gap: 12,
     padding: 18,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
   progressStage: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 17,
     fontWeight: "700",
   },
   progressMeta: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 14,
   },
   progressTrack: {
     height: 10,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.sliderTrack,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.sliderTrack,
     overflow: "hidden",
   },
   progressBar: {
     height: 10,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.accent,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.accent,
   },
   emptyRoot: {
     flex: 1,
@@ -425,9 +425,9 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 12,
     padding: 24,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surface,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: appTheme.colors.border,
   },
 });

@@ -17,7 +17,7 @@ import {
   stylePresets,
   zoneOptions,
 } from "@/constants/design";
-import theme from "@/constants/theme";
+import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import {
   startVoiceCapture,
@@ -29,16 +29,16 @@ import { GenerationMode, ImageQuality, VariantCount } from "@/types/app";
 import { createAutoProjectTitle } from "@/utils/format";
 import { getSingleParam } from "@/utils/routes";
 
-const variantCountOptions: Array<{ value: VariantCount; label: string }> = [
+const variantCountOptions: { value: VariantCount; label: string }[] = [
   { value: 1, label: "1 вариант" },
   { value: 2, label: "2 варианта" },
   { value: 4, label: "4 варианта" },
 ];
 
-const qualityOptions: Array<{
+const qualityOptions: {
   value: ImageQuality;
   label: string;
-}> = [
+}[] = [
   { value: "low", label: "Быстро · 1 кр/вар" },
   { value: "medium", label: "Баланс · 2 кр/вар" },
   { value: "high", label: "Максимум · 4 кр/вар" },
@@ -313,7 +313,7 @@ export default function ProjectDesignScreen() {
           ))}
         </View>
         <AppButton
-          icon={<Mic color={theme.colors.text} size={18} />}
+          icon={<Mic color={appTheme.colors.text} size={18} />}
           label={isRecording ? "Остановить запись" : "Сказать голосом"}
           onPress={handleVoiceInput}
           testId="voice-input"
@@ -331,14 +331,14 @@ export default function ProjectDesignScreen() {
       <SectionCard title="Предложить стиль" subtitle="Выберите направление или доверьтесь приложению">
         <View style={styles.buttonRow}>
           <AppButton
-            icon={<Palette color={theme.colors.text} size={18} />}
+            icon={<Palette color={appTheme.colors.text} size={18} />}
             label="Предложить стиль"
             onPress={handleSuggestStyle}
             testId="suggest-style"
             variant="secondary"
           />
           <AppButton
-            icon={<Sparkles color={theme.colors.text} size={18} />}
+            icon={<Sparkles color={appTheme.colors.text} size={18} />}
             label="Сделать красиво"
             onPress={handleBeautiful}
             testId="make-beautiful"
@@ -399,14 +399,14 @@ export default function ProjectDesignScreen() {
       <SectionCard title="Шаблоны" subtitle="Сохраняйте удачные комбинации и применяйте их позже">
         <View style={styles.buttonRow}>
           <AppButton
-            icon={<Bookmark color={theme.colors.text} size={18} />}
+            icon={<Bookmark color={appTheme.colors.text} size={18} />}
             label="Сохранить шаблон"
             onPress={handleSaveTemplate}
             testId="save-template"
             variant="secondary"
           />
           <AppButton
-            icon={<LayoutTemplate color={theme.colors.text} size={18} />}
+            icon={<LayoutTemplate color={appTheme.colors.text} size={18} />}
             label="Применить шаблон"
             onPress={() =>
               router.push({
@@ -466,7 +466,7 @@ export default function ProjectDesignScreen() {
 
       <View style={styles.footerActions}>
         <AppButton
-          icon={<Sparkles color={theme.colors.text} size={18} />}
+          icon={<Sparkles color={appTheme.colors.text} size={18} />}
           label="Попробовать бесплатно"
           subtitle="1 вариант · низкое качество"
           onPress={() => {
@@ -486,7 +486,7 @@ export default function ProjectDesignScreen() {
         />
         {project.variants.length > 0 ? (
           <AppButton
-            icon={<FolderOpen color={theme.colors.text} size={18} />}
+            icon={<FolderOpen color={appTheme.colors.text} size={18} />}
             label="Открыть последние варианты"
             onPress={() =>
               router.push({
@@ -511,22 +511,22 @@ const styles = StyleSheet.create({
   previewImage: {
     width: "100%",
     height: 260,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surfaceAlt,
   },
   ruleBanner: {
     gap: 6,
     padding: 16,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.backgroundElevated,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
   },
   ruleBannerTitle: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 13,
     fontWeight: "700",
   },
   ruleBannerText: {
-    color: theme.colors.text,
+    color: appTheme.colors.text,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -534,11 +534,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.accentSoft,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.accentSoft,
   },
   templateBadgeText: {
-    color: theme.colors.accentStrong,
+    color: appTheme.colors.accentStrong,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -554,12 +554,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   exampleText: {
-    color: theme.colors.textMuted,
+    color: appTheme.colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
   helperText: {
-    color: theme.colors.textSecondary,
+    color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
