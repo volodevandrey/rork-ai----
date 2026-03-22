@@ -102,33 +102,120 @@ function appendImageToFormData(params: {
   formData.append(fieldName, imageBlob, fileName);
 }
 
-async function requestVariant(params: {
-  project: ProjectItem;
-  strictness: Strictness;
-  strategyIndex: number;
+async function buildVariantItem(params: {
+  projectId: string;
+  strategyId: string;
+  strategyTitle: string;
+  strategySubtitle: string;
+  generatedBase64: string;
+  mimeType: string;
+}): Promise<VariantItem> {
+  const { projectId, strategyId, strategyTitle, strategySubtitle, generatedBase64, mimeType } = params;
+  const uri = await persistBase64Image({
+    base64: generatedBase64,
+    mimeType,
+    fileNamePrefix: `variant-${projectId}-${strategyId}`,
+  });
+
+  return {
+    id: createId("variant"),
+    title: strategyTitle,
+    subtitle: strategySubtitle,
+    image: {
+      uri,
+      mimeType,
+      width: 1024,
+      height: 1024,
+    },
+    createdAt: Date.now(),
+  };
+}
+
+async function requestOpenAIVariant(params: {
+  prompt: string;
+  sourceBase64: string;
+  strategyTitle: string;
+  strategySubtitle: string;
+  projectId: string;
+  strategyId: string;
+}): Promise<VariantItem> {
+  const { prompt, sourceBase64, strategyTitle, strategySubtitle, projectId, strategyId } = params;
+  const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+
+  const formData = new FormData();
+  formData.append("model", "gpt-image-1");
+  formData.append("prompt", prompt);
+  formData.append("n", "1");
+  formData.append("size", "1024x1024");
+
+  appendImageToFormData({
+    formData,
+    fieldName: "image",
+    base64: sourceBase64,
+    mimeType: "image/png",
+    fileNamePrefix: `variant-source-${strategyId}`,
+  });
+
+  console.log("[imageGeneration] requesting OpenAI variant", strategyTitle);
+
+  const response = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log("[imageGeneration] OpenAI request failed", response.status, errorText);
+    throw new Error("OpenAI image edit failed.");
+  }
+
+  const data = (await response.json()) as OpenAIImageEditResponse;
+  const generatedBase64 = data.data?.[0]?.b64_json;
+
+  if (!generatedBase64) {
+    console.log("[imageGeneration] OpenAI response missing image", data.error?.message ?? "unknown error");
+    throw new Error("OpenAI image edit returned no image.");
+  }
+
+  return buildVariantItem({
+    projectId,
+    strategyId,
+    strategyTitle,
+    strategySubtitle,
+    generatedBase64,
+    mimeType: "image/png",
+  });
+}
+
+async function requestToolkitVariant(params: {
+  prompt: string;
   sourceBase64: string;
   quality: ImageQuality;
   referenceBase64?: string;
-  referenceVariantTitle?: string;
+  strategyTitle: string;
+  strategySubtitle: string;
+  projectId: string;
+  strategyId: string;
 }): Promise<VariantItem> {
   const {
-    project,
-    strictness,
-    strategyIndex,
+    prompt,
     sourceBase64,
     quality,
     referenceBase64,
-    referenceVariantTitle,
+    strategyTitle,
+    strategySubtitle,
+    projectId,
+    strategyId,
   } = params;
-  const prompt = buildVariantPrompt({
-    project,
-    strictness,
-    strategyIndex,
-    referenceVariantTitle,
-  });
-  const strategy = getVariantStrategies()[strategyIndex];
 
-  console.log("[imageGeneration] requesting toolkit variant", strategy.title, {
+  console.log("[imageGeneration] requesting toolkit variant", strategyTitle, {
     hasReference: Boolean(referenceBase64),
     quality,
   });
@@ -164,24 +251,72 @@ async function requestVariant(params: {
     throw new Error("Сервис генерации не вернул изображение.");
   }
 
-  const uri = await persistBase64Image({
-    base64: generatedBase64,
+  return buildVariantItem({
+    projectId,
+    strategyId,
+    strategyTitle,
+    strategySubtitle,
+    generatedBase64,
     mimeType,
-    fileNamePrefix: `variant-${project.id}-${strategy.id}`,
   });
+}
 
-  return {
-    id: createId("variant"),
-    title: strategy.title,
-    subtitle: strategy.subtitle,
-    image: {
-      uri,
-      mimeType,
-      width: 1024,
-      height: 1024,
-    },
-    createdAt: Date.now(),
-  };
+async function requestVariant(params: {
+  project: ProjectItem;
+  strictness: Strictness;
+  strategyIndex: number;
+  sourceBase64: string;
+  quality: ImageQuality;
+  referenceBase64?: string;
+  referenceVariantTitle?: string;
+}): Promise<VariantItem> {
+  const {
+    project,
+    strictness,
+    strategyIndex,
+    sourceBase64,
+    quality,
+    referenceBase64,
+    referenceVariantTitle,
+  } = params;
+  const prompt = buildVariantPrompt({
+    project,
+    strictness,
+    strategyIndex,
+    referenceVariantTitle,
+  });
+  const strategy = getVariantStrategies()[strategyIndex];
+
+  if (!strategy) {
+    throw new Error("Стратегия генерации не найдена.");
+  }
+
+  if (process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
+    try {
+      return await requestOpenAIVariant({
+        prompt,
+        sourceBase64,
+        strategyTitle: strategy.title,
+        strategySubtitle: strategy.subtitle,
+        projectId: project.id,
+        strategyId: strategy.id,
+      });
+    } catch (error) {
+      console.log("[imageGeneration] OpenAI failed, fallback to toolkit");
+      console.log("[imageGeneration] OpenAI fallback reason", error);
+    }
+  }
+
+  return requestToolkitVariant({
+    prompt,
+    sourceBase64,
+    quality,
+    referenceBase64,
+    strategyTitle: strategy.title,
+    strategySubtitle: strategy.subtitle,
+    projectId: project.id,
+    strategyId: strategy.id,
+  });
 }
 
 export async function generateProjectVariants(params: {
