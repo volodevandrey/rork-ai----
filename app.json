@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "AI Мебельный визуализатор",
+    "slug": "pb7zgz3uexbzoglaxbo4t",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "rork-app",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.rork.pb7zgz3uexbzoglaxbo4t",
+
+      "infoPlist": {
+        "NSCameraUsageDescription": "The app uses the camera so users can take a photo of a furniture sketch, kitchen sketch, or room and generate a realistic interior visualization.",
+        "NSPhotoLibraryUsageDescription": "The app accesses the photo library so users can upload a furniture sketch, kitchen sketch, or room photo and convert it into a realistic interior visualization."
+      }
+    },
+
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.rork.pb7zgz3uexbzoglaxbo4t"
+    },
+
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://rork.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
