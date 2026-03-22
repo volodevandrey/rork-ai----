@@ -19,7 +19,9 @@ Output quality requirements:
 - Color grade: warm neutral tones, professional interior photo
 - Zero CGI plastic look, zero flat lighting, zero AI artifacts
 
-Hard rules: preserve camera angle, furniture geometry, module count, room architecture. Never redesign the scene.`;
+Hard rules: preserve camera angle, furniture geometry, module count, room architecture. Never redesign the scene.
+
+ABSOLUTE RULE: NEVER add any new objects, furniture, plants, fruits, decorations, dishes, vases or any items that do not exist in the original image. ONLY change colors, materials, textures and surfaces of existing furniture. If you add anything new — the result is wrong.`;
 
 const sketchSystemPrompt = `You are a professional CGI artist creating photorealistic interior visualizations from sketches.
 
@@ -32,7 +34,9 @@ Transform this sketch into a premium interior photo with:
 - Warm neutral professional color grade
 - Result must look like a real photo shot inside the room
 
-Hard rules: preserve original furniture configuration, proportions, module count and layout from the sketch exactly.`;
+Hard rules: preserve original furniture configuration, proportions, module count and layout from the sketch exactly.
+
+ABSOLUTE RULE: NEVER add any new objects, furniture, plants, fruits, decorations, dishes, vases or any items that do not exist in the original image. ONLY change colors, materials, textures and surfaces of existing furniture. If you add anything new — the result is wrong.`;
 
 const strictnessLabels: Record<Strictness, string> = {
   standard: "Сохраняй форму внимательно",
