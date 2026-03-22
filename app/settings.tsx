@@ -1,14 +1,37 @@
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
+import { Coins } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
+import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
 import theme from "@/constants/theme";
+import { useCreditsStore } from "@/stores/creditsStore";
 
 export default function SettingsScreen() {
+  const credits = useCreditsStore((state) => state.credits);
+
   return (
     <AppScrollScreen contentContainerStyle={styles.content} testId="settings-screen">
       <Stack.Screen options={{ title: "Настройки" }} />
+
+      <SectionCard
+        title="Кредиты"
+        subtitle="Баланс используется для генерации вариантов в разных режимах качества"
+      >
+        <View style={styles.creditsCard}>
+          <Text style={styles.creditsLabel}>Текущий баланс</Text>
+          <Text style={styles.creditsValue}>{credits} кр.</Text>
+          <Text style={styles.creditsHint}>Medium качество стоит 2 кредита за вариант.</Text>
+        </View>
+        <AppButton
+          icon={<Coins color={theme.colors.text} size={18} />}
+          label="Пополнить кредиты"
+          onPress={() => router.push("/shop")}
+          testId="open-shop"
+          variant="secondary"
+        />
+      </SectionCard>
 
       <SectionCard
         title="Главный принцип"
@@ -24,7 +47,7 @@ export default function SettingsScreen() {
 
       <SectionCard title="Хранение данных" subtitle="Приложение работает в локальном режиме v1">
         <Text style={styles.bodyText}>
-          Проекты, шаблоны и результаты сохраняются на устройстве. Это помогает быстро вернуться к прошлым клиентским вариантам без лишней сложности.
+          Проекты, шаблоны, кредиты и результаты сохраняются на устройстве. Это помогает быстро вернуться к прошлым клиентским вариантам без лишней сложности.
         </Text>
       </SectionCard>
 
@@ -43,6 +66,27 @@ const styles = StyleSheet.create({
   content: {
     gap: 20,
     paddingTop: 12,
+  },
+  creditsCard: {
+    gap: 6,
+    padding: 16,
+    borderRadius: theme.radii.lg,
+    backgroundColor: theme.colors.backgroundElevated,
+  },
+  creditsLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  creditsValue: {
+    color: theme.colors.text,
+    fontSize: 30,
+    fontWeight: "800",
+  },
+  creditsHint: {
+    color: theme.colors.accentStrong,
+    fontSize: 14,
+    lineHeight: 20,
   },
   ruleCard: {
     gap: 8,

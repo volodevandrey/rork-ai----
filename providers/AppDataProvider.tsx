@@ -94,6 +94,8 @@ export const [AppDataProvider, useAppData] = createContextHook(() => {
         selectedTemplateId: null,
         status: "draft",
         variants: [],
+        variantCount: 2,
+        quality: "medium",
         history: [],
         createdAt: now,
         updatedAt: now,

@@ -17,7 +17,8 @@ import theme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { generateProjectVariants } from "@/services/ai/imageGeneration";
 import { readBase64FromUri } from "@/services/storage/fileStorage";
-import { GenerationProgress, Strictness, VariantCount } from "@/types/app";
+import { useCreditsStore } from "@/stores/creditsStore";
+import { GenerationProgress, ImageQuality, Strictness, VariantCount } from "@/types/app";
 import { getSingleParam } from "@/utils/routes";
 
 function parseStrictness(value: string, fallback: Strictness): Strictness {
@@ -28,16 +29,28 @@ function parseStrictness(value: string, fallback: Strictness): Strictness {
   return fallback;
 }
 
-function parseVariantCount(value: string | undefined): VariantCount {
+function parseVariantCount(value: string | undefined, fallback: VariantCount): VariantCount {
   if (value === "1") {
     return 1;
+  }
+
+  if (value === "2") {
+    return 2;
   }
 
   if (value === "4") {
     return 4;
   }
 
-  return 2;
+  return fallback;
+}
+
+function parseImageQuality(value: string | undefined, fallback: ImageQuality): ImageQuality {
+  if (value === "low" || value === "medium" || value === "high") {
+    return value;
+  }
+
+  return fallback;
 }
 
 export default function GenerationScreen() {
@@ -46,14 +59,29 @@ export default function GenerationScreen() {
     strictness?: string | string[];
     referenceVariantId?: string | string[];
     variantCount?: string | string[];
+    quality?: string | string[];
   }>();
   const projectId = getSingleParam(params.projectId);
   const strictnessParam = getSingleParam(params.strictness);
   const referenceVariantId = getSingleParam(params.referenceVariantId);
   const variantCountParam = getSingleParam(params.variantCount);
+  const qualityParam = getSingleParam(params.quality);
   const { getProject, saveGeneratedVariants, updateProject } = useAppData();
+  const spendCredits = useCreditsStore((state) => state.spendCredits);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
-  const variantCount = useMemo(() => parseVariantCount(variantCountParam), [variantCountParam]);
+  const project = getProject(projectId);
+  const fallbackStrictness = project?.mode === "photo" ? "maximum" : "strict";
+  const fallbackVariantCount = project?.variantCount ?? 2;
+  const fallbackQuality = project?.quality ?? "medium";
+  const strictness = useMemo(() => {
+    return parseStrictness(strictnessParam, fallbackStrictness);
+  }, [fallbackStrictness, strictnessParam]);
+  const variantCount = useMemo(() => {
+    return parseVariantCount(variantCountParam, fallbackVariantCount);
+  }, [fallbackVariantCount, variantCountParam]);
+  const quality = useMemo(() => {
+    return parseImageQuality(qualityParam, fallbackQuality);
+  }, [fallbackQuality, qualityParam]);
   const [progress, setProgress] = useState<GenerationProgress>({
     stage: "Подготовка изображения",
     step: 1,
@@ -61,11 +89,12 @@ export default function GenerationScreen() {
   });
   const animation = useRef<Animated.Value>(new Animated.Value(0)).current;
 
-  const project = getProject(projectId);
-  const fallbackStrictness = project?.mode === "photo" ? "maximum" : "strict";
-  const strictness = useMemo(() => {
-    return parseStrictness(strictnessParam, fallbackStrictness);
-  }, [fallbackStrictness, strictnessParam]);
+  useEffect(() => {
+    setProgress((current) => ({
+      ...current,
+      totalSteps: variantCount + 2,
+    }));
+  }, [variantCount]);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -96,6 +125,8 @@ export default function GenerationScreen() {
         throw new Error("Проект не найден.");
       }
 
+      await spendCredits(quality, variantCount);
+
       const sourceBase64 = await readBase64FromUri(project.sourceImage.uri);
       const referenceVariant = project.variants.find((item) => item.id === referenceVariantId) ?? null;
       const referenceBase64 = referenceVariant ? await readBase64FromUri(referenceVariant.image.uri) : undefined;
@@ -104,6 +135,7 @@ export default function GenerationScreen() {
         project,
         sourceBase64,
         strictness,
+        quality,
         variantCount,
         referenceBase64,
         referenceMimeType: referenceVariant?.image.mimeType,

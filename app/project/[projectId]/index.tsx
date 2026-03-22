@@ -4,8 +4,8 @@ import { Bookmark, FolderOpen, LayoutTemplate, Mic, Palette, Sparkles } from "lu
 import { useCallback, useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
-import { Chip } from "@/components/ui/Chip";
 import { AppButton } from "@/components/ui/AppButton";
+import { Chip } from "@/components/ui/Chip";
 import { AppTextField } from "@/components/ui/AppTextField";
 import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -19,11 +19,13 @@ import {
 } from "@/constants/design";
 import theme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
-import { VariantCount } from "@/types/app";
 import {
   startVoiceCapture,
   stopVoiceCaptureAndTranscribe,
 } from "@/services/media/voiceService";
+import { getCost } from "@/services/storage/creditsService";
+import { useCreditsStore } from "@/stores/creditsStore";
+import { ImageQuality, VariantCount } from "@/types/app";
 import { createAutoProjectTitle } from "@/utils/format";
 import { getSingleParam } from "@/utils/routes";
 
@@ -31,6 +33,15 @@ const variantCountOptions: Array<{ value: VariantCount; label: string }> = [
   { value: 1, label: "1 вариант" },
   { value: 2, label: "2 варианта" },
   { value: 4, label: "4 варианта" },
+];
+
+const qualityOptions: Array<{
+  value: ImageQuality;
+  label: string;
+}> = [
+  { value: "low", label: "Быстро · 1 кр/вар" },
+  { value: "medium", label: "Баланс · 2 кр/вар" },
+  { value: "high", label: "Максимум · 4 кр/вар" },
 ];
 
 function appendSnippet(currentValue: string, snippet: string): string {
@@ -57,8 +68,10 @@ export default function ProjectDesignScreen() {
     templates,
     updateProject,
   } = useAppData();
+  const credits = useCreditsStore((state) => state.credits);
+  const loaded = useCreditsStore((state) => state.loaded);
+  const loadCredits = useCreditsStore((state) => state.loadCredits);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [variantCount, setVariantCount] = useState<VariantCount>(2);
 
   const project = getProject(projectId);
   const currentTemplate = useMemo(() => {
@@ -68,6 +81,14 @@ export default function ProjectDesignScreen() {
 
     return templates.find((item) => item.id === project.selectedTemplateId) ?? null;
   }, [project?.selectedTemplateId, templates]);
+
+  const cost = useMemo(() => {
+    if (!project) {
+      return 0;
+    }
+
+    return getCost(project.quality, project.variantCount);
+  }, [project]);
 
   const handleDescriptionChange = useCallback(
     (value: string) => {
@@ -157,7 +178,7 @@ export default function ProjectDesignScreen() {
     Alert.alert("Готово", "Шаблон сохранён.");
   }, [project, projectId, saveTemplateFromProject]);
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     if (!project) {
       return;
     }
@@ -166,6 +187,26 @@ export default function ProjectDesignScreen() {
       Alert.alert(
         "Нужно уточнение",
         `Опишите, что хотите изменить. Например: ${smartPromptExamples[0]}`,
+      );
+      return;
+    }
+
+    const availableCredits = loaded ? credits : await loadCredits();
+
+    if (availableCredits < cost) {
+      Alert.alert(
+        "Недостаточно кредитов",
+        `Нужно ${cost}, у вас ${availableCredits}.\nПополнить?`,
+        [
+          {
+            text: "Пополнить",
+            onPress: () => router.push("/shop"),
+          },
+          {
+            text: "Отмена",
+            style: "cancel",
+          },
+        ],
       );
       return;
     }
@@ -180,10 +221,11 @@ export default function ProjectDesignScreen() {
       pathname: "/project/[projectId]/generating",
       params: {
         projectId,
-        variantCount: String(variantCount),
+        quality: project.quality,
+        variantCount: String(project.variantCount),
       },
     });
-  }, [project, projectId, updateProject, variantCount]);
+  }, [cost, credits, loadCredits, loaded, project, projectId, updateProject]);
 
   if (!project) {
     return (
@@ -198,7 +240,7 @@ export default function ProjectDesignScreen() {
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} testId="project-screen">
-      <Stack.Screen options={{ title: project.title }} />
+      <Stack.Screen options={{ title: `${project.title} · ${loaded ? credits : "..."} кр.` }} />
 
       <SectionCard
         title="Исходное изображение"
@@ -341,9 +383,33 @@ export default function ProjectDesignScreen() {
             <Chip
               key={option.value}
               label={option.label}
-              onPress={() => setVariantCount(option.value)}
-              selected={variantCount === option.value}
+              onPress={() =>
+                updateProject(projectId, (current) => ({
+                  ...current,
+                  variantCount: option.value,
+                }))
+              }
+              selected={project.variantCount === option.value}
               testId={`variant-count-${option.value}`}
+            />
+          ))}
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Качество генерации" subtitle="Больше деталей — выше стоимость и дольше ожидание">
+        <View style={styles.chipWrap}>
+          {qualityOptions.map((option) => (
+            <Chip
+              key={option.value}
+              label={option.label}
+              onPress={() =>
+                updateProject(projectId, (current) => ({
+                  ...current,
+                  quality: option.value,
+                }))
+              }
+              selected={project.quality === option.value}
+              testId={`quality-${option.value}`}
             />
           ))}
         </View>
@@ -353,8 +419,10 @@ export default function ProjectDesignScreen() {
         <SectionCard title="Нужна повторная попытка" subtitle={project.lastError}>
           <AppButton
             icon={<Sparkles color="#241B10" size={18} />}
-            label="Создать варианты снова"
-            onPress={handleGenerate}
+            label={`Создать варианты снова · ${cost} кр.`}
+            onPress={() => {
+              void handleGenerate();
+            }}
             variant="primary"
           />
         </SectionCard>
@@ -363,8 +431,10 @@ export default function ProjectDesignScreen() {
       <View style={styles.footerActions}>
         <AppButton
           icon={<Sparkles color="#241B10" size={18} />}
-          label="Создать варианты"
-          onPress={handleGenerate}
+          label={`Создать варианты · ${cost} кр.`}
+          onPress={() => {
+            void handleGenerate();
+          }}
           testId="generate-variants"
         />
         {project.variants.length > 0 ? (

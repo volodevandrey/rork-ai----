@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppErrorBoundary } from "@/components/ui/AppErrorBoundary";
 import theme from "@/constants/theme";
 import { AppDataProvider } from "@/providers/AppDataProvider";
+import { useCreditsStore } from "@/stores/creditsStore";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -36,6 +37,7 @@ function RootLayoutNav() {
       <Stack.Screen name="templates" options={{ title: "Шаблоны" }} />
       <Stack.Screen name="projects" options={{ title: "Мои проекты" }} />
       <Stack.Screen name="settings" options={{ title: "Настройки" }} />
+      <Stack.Screen name="shop" options={{ title: "Магазин кредитов" }} />
       <Stack.Screen name="project/[projectId]/index" options={{ title: "Проект" }} />
       <Stack.Screen name="project/[projectId]/generating" options={{ headerShown: false }} />
       <Stack.Screen name="project/[projectId]/results" options={{ title: "Варианты" }} />
@@ -53,7 +55,24 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    void SplashScreen.hideAsync();
+    let isMounted = true;
+
+    const prepareApp = async () => {
+      try {
+        console.log("[RootLayout] loading credits on startup");
+        await useCreditsStore.getState().loadCredits();
+      } finally {
+        if (isMounted) {
+          await SplashScreen.hideAsync();
+        }
+      }
+    };
+
+    void prepareApp();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

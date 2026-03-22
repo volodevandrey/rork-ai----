@@ -1,10 +1,34 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { ProjectItem, TemplateItem } from "@/types/app";
+import { ImageQuality, ProjectItem, TemplateItem, VariantCount } from "@/types/app";
 
 const PROJECTS_KEY = "@furniture-ai/projects";
 const TEMPLATES_KEY = "@furniture-ai/templates";
 const LAST_ACTIVE_PROJECT_KEY = "@furniture-ai/last-active-project";
+
+function parseVariantCount(value: unknown): VariantCount {
+  if (value === 1 || value === 2 || value === 4) {
+    return value;
+  }
+
+  return 2;
+}
+
+function parseImageQuality(value: unknown): ImageQuality {
+  if (value === "low" || value === "medium" || value === "high") {
+    return value;
+  }
+
+  return "medium";
+}
+
+function normalizeProject(project: Partial<ProjectItem>): ProjectItem {
+  return {
+    ...(project as ProjectItem),
+    variantCount: parseVariantCount(project.variantCount),
+    quality: parseImageQuality(project.quality),
+  };
+}
 
 async function loadJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -29,7 +53,8 @@ async function saveJson<T>(key: string, value: T): Promise<void> {
 }
 
 export async function loadProjects(): Promise<ProjectItem[]> {
-  return loadJson<ProjectItem[]>(PROJECTS_KEY, []);
+  const projects = await loadJson<Partial<ProjectItem>[]>(PROJECTS_KEY, []);
+  return projects.map(normalizeProject);
 }
 
 export async function saveProjects(projects: ProjectItem[]): Promise<void> {
