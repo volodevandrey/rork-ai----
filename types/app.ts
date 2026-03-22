@@ -9,6 +9,8 @@ export type ChangeZone =
 
 export type Strictness = "standard" | "strict" | "maximum";
 
+export type VariantCount = 1 | 2 | 4;
+
 export type ProjectStatus = "draft" | "generating" | "ready" | "error";
 
 export type StylePresetId =

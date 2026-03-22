@@ -19,12 +19,19 @@ import {
 } from "@/constants/design";
 import theme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
+import { VariantCount } from "@/types/app";
 import {
   startVoiceCapture,
   stopVoiceCaptureAndTranscribe,
 } from "@/services/media/voiceService";
 import { createAutoProjectTitle } from "@/utils/format";
 import { getSingleParam } from "@/utils/routes";
+
+const variantCountOptions: Array<{ value: VariantCount; label: string }> = [
+  { value: 1, label: "1 вариант" },
+  { value: 2, label: "2 варианта" },
+  { value: 4, label: "4 варианта" },
+];
 
 function appendSnippet(currentValue: string, snippet: string): string {
   const trimmedValue = currentValue.trim();
@@ -51,6 +58,7 @@ export default function ProjectDesignScreen() {
     updateProject,
   } = useAppData();
   const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [variantCount, setVariantCount] = useState<VariantCount>(2);
 
   const project = getProject(projectId);
   const currentTemplate = useMemo(() => {
@@ -170,9 +178,12 @@ export default function ProjectDesignScreen() {
 
     router.push({
       pathname: "/project/[projectId]/generating",
-      params: { projectId },
+      params: {
+        projectId,
+        variantCount: String(variantCount),
+      },
     });
-  }, [project, projectId, updateProject]);
+  }, [project, projectId, updateProject, variantCount]);
 
   if (!project) {
     return (
@@ -321,6 +332,20 @@ export default function ProjectDesignScreen() {
             testId="apply-template"
             variant="secondary"
           />
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Количество вариантов" subtitle="Больше вариантов — дольше генерация, но шире выбор">
+        <View style={styles.chipWrap}>
+          {variantCountOptions.map((option) => (
+            <Chip
+              key={option.value}
+              label={option.label}
+              onPress={() => setVariantCount(option.value)}
+              selected={variantCount === option.value}
+              testId={`variant-count-${option.value}`}
+            />
+          ))}
         </View>
       </SectionCard>
 

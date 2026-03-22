@@ -1,4 +1,4 @@
-import { ProjectItem, Strictness, VariantItem } from "@/types/app";
+import { ProjectItem, Strictness, VariantCount, VariantItem } from "@/types/app";
 import { createId } from "@/utils/id";
 import { persistBase64Image } from "@/services/storage/fileStorage";
 import { buildVariantPrompt, getVariantStrategies } from "@/services/ai/promptBuilder";
@@ -105,6 +105,7 @@ export async function generateProjectVariants(params: {
   project: ProjectItem;
   sourceBase64: string;
   strictness: Strictness;
+  variantCount: VariantCount;
   referenceBase64?: string;
   referenceVariantTitle?: string;
   onProgress?: (stage: string, step: number, totalSteps: number) => void;
@@ -113,32 +114,44 @@ export async function generateProjectVariants(params: {
     project,
     sourceBase64,
     strictness,
+    variantCount,
     referenceBase64,
     referenceVariantTitle,
     onProgress,
   } = params;
-  const strategies = getVariantStrategies();
-  const totalSteps = strategies.length + 2;
+  const strategies = getVariantStrategies().slice(0, variantCount);
+  const totalSteps = variantCount + 2;
 
   onProgress?.("Подготовка изображения", 1, totalSteps);
   console.log("[imageGeneration] project start", project.id, project.mode, strictness);
 
   onProgress?.("Проверка сохранения формы", 2, totalSteps);
 
-  const variants: VariantItem[] = [];
+  let completedVariants = 0;
 
-  for (let index = 0; index < strategies.length; index += 1) {
-    onProgress?.(`Создание варианта ${index + 1} из ${strategies.length}`, index + 3, totalSteps);
-    const variant = await requestVariant({
-      project,
-      strictness,
-      strategyIndex: index,
-      sourceBase64,
-      referenceBase64,
-      referenceVariantTitle,
-    });
-    variants.push(variant);
-  }
+  const variants = await Promise.all(
+    strategies.map(async (_, index) => {
+      console.log("[imageGeneration] scheduling variant", index + 1, "of", strategies.length);
+
+      const variant = await requestVariant({
+        project,
+        strictness,
+        strategyIndex: index,
+        sourceBase64,
+        referenceBase64,
+        referenceVariantTitle,
+      });
+
+      completedVariants += 1;
+      onProgress?.(
+        `Создан вариант ${completedVariants} из ${strategies.length}: ${variant.title}`,
+        completedVariants + 2,
+        totalSteps,
+      );
+
+      return variant;
+    }),
+  );
 
   console.log("[imageGeneration] project completed", project.id, variants.length);
   return variants;

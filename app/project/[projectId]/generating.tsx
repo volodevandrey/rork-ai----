@@ -17,7 +17,7 @@ import theme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { generateProjectVariants } from "@/services/ai/imageGeneration";
 import { readBase64FromUri } from "@/services/storage/fileStorage";
-import { GenerationProgress, Strictness } from "@/types/app";
+import { GenerationProgress, Strictness, VariantCount } from "@/types/app";
 import { getSingleParam } from "@/utils/routes";
 
 function parseStrictness(value: string, fallback: Strictness): Strictness {
@@ -28,21 +28,36 @@ function parseStrictness(value: string, fallback: Strictness): Strictness {
   return fallback;
 }
 
+function parseVariantCount(value: string | undefined): VariantCount {
+  if (value === "1") {
+    return 1;
+  }
+
+  if (value === "4") {
+    return 4;
+  }
+
+  return 2;
+}
+
 export default function GenerationScreen() {
   const params = useLocalSearchParams<{
     projectId: string | string[];
     strictness?: string | string[];
     referenceVariantId?: string | string[];
+    variantCount?: string | string[];
   }>();
   const projectId = getSingleParam(params.projectId);
   const strictnessParam = getSingleParam(params.strictness);
   const referenceVariantId = getSingleParam(params.referenceVariantId);
+  const variantCountParam = getSingleParam(params.variantCount);
   const { getProject, saveGeneratedVariants, updateProject } = useAppData();
   const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const variantCount = useMemo(() => parseVariantCount(variantCountParam), [variantCountParam]);
   const [progress, setProgress] = useState<GenerationProgress>({
     stage: "Подготовка изображения",
     step: 1,
-    totalSteps: 6,
+    totalSteps: variantCount + 2,
   });
   const animation = useRef<Animated.Value>(new Animated.Value(0)).current;
 
@@ -89,6 +104,7 @@ export default function GenerationScreen() {
         project,
         sourceBase64,
         strictness,
+        variantCount,
         referenceBase64,
         referenceVariantTitle: referenceVariant?.title,
         onProgress: (stage, step, totalSteps) => {
