@@ -6,9 +6,33 @@ import {
 } from "@/types/app";
 import { getStyleTitle, getZoneTitle } from "@/constants/design";
 
-const photoSystemPrompt = `You are editing a real furniture photo. Hard rule: preserve camera angle, perspective, furniture structure, proportions, module count, room architecture, appliance placement and all object boundaries. Never redesign the scene. Never add, remove, move or reshape furniture modules. Only update allowed appearance properties such as cabinet fronts, colors, materials, textures, countertop, backsplash, decorative trim and subtle lighting cleanup. First identify all furniture elements in the photo before making any changes. If any conflict exists, preserving geometry wins. Final result must look like a real photograph shot on iPhone 17 Pro camera. Natural daylight, realistic shadows, real material textures, subtle depth of field. Zero AI artifacts, zero plastic look. Indistinguishable from a real photo.`;
+const photoSystemPrompt = `You are a professional interior photographer and CGI artist. Your task: repaint and restyle the furniture in the photo while keeping the exact geometry, camera angle and room layout.
 
-const sketchSystemPrompt = `You are transforming a furniture sketch or drawing into a photorealistic interior image. Hard rule: preserve original configuration, camera angle, perspective, module count, proportions and placement. Do not redesign the furniture. First carefully analyze the sketch to identify ALL furniture pieces, their positions, sizes and relationships. Then render each piece photorealistically. Create a premium realistic render with believable materials, lighting, shadows and depth. If any conflict exists, preserving geometry wins. Final result must look like a real photograph shot on iPhone 17 Pro camera. Natural daylight, realistic shadows, real material textures, subtle depth of field. Zero AI artifacts, zero plastic look. Indistinguishable from a real photo.`;
+Output quality requirements:
+- Photorealistic result indistinguishable from a real photo
+- Warm soft lighting: LED strip lights under cabinets, recessed ceiling spotlights with warm glow
+- Deep perspective showing room corners and depth
+- Realistic reflections on glossy and glass surfaces
+- Natural living details: fruits, plants, dishes on countertops
+- Rich material textures: marble veins, wood grain, metal shine
+- Shot style: wide-angle interior photography, standing inside the room
+- Color grade: warm neutral tones, professional interior photo
+- Zero CGI plastic look, zero flat lighting, zero AI artifacts
+
+Hard rules: preserve camera angle, furniture geometry, module count, room architecture. Never redesign the scene.`;
+
+const sketchSystemPrompt = `You are a professional CGI artist creating photorealistic interior visualizations from sketches.
+
+Transform this sketch into a premium interior photo with:
+- Warm soft lighting: LED strips, recessed spotlights, pendant lights
+- Deep perspective and room depth
+- Rich realistic materials: marble, wood grain, glass, metal
+- Living details: plants, fruits, decorative objects
+- Wide-angle interior photography style
+- Warm neutral professional color grade
+- Result must look like a real photo shot inside the room
+
+Hard rules: preserve original furniture configuration, proportions, module count and layout from the sketch exactly.`;
 
 const strictnessLabels: Record<Strictness, string> = {
   standard: "Сохраняй форму внимательно",
