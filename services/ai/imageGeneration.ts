@@ -248,3 +248,96 @@ export async function generateProjectVariants(params: {
   console.log("[imageGeneration] project completed", project.id, variants.length);
   return variants;
 }
+
+export async function inpaintFurniture(params: {
+  sourceBase64: string;
+  sourceMimeType?: string;
+  maskBase64: string;
+  description: string;
+}): Promise<VariantItem> {
+  const { sourceBase64, sourceMimeType = "image/png", maskBase64, description } = params;
+  const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+  const normalizedDescription = description.trim();
+
+  if (!apiKey) {
+    console.log("[imageGeneration] missing EXPO_PUBLIC_OPENAI_API_KEY");
+    throw new Error("Не настроен OpenAI API key. Добавьте EXPO_PUBLIC_OPENAI_API_KEY и попробуйте снова.");
+  }
+
+  if (!normalizedDescription) {
+    throw new Error("Опишите, какую мебель нужно дорисовать.");
+  }
+
+  const formData = new FormData();
+  formData.append("model", "gpt-image-1");
+  formData.append(
+    "prompt",
+    `Add ${normalizedDescription} in the same style as existing furniture. Preserve all existing furniture exactly.`,
+  );
+  formData.append("n", "1");
+  formData.append("size", "1024x1024");
+  formData.append("output_format", "png");
+
+  appendImageToFormData({
+    formData,
+    fieldName: "image",
+    base64: sourceBase64,
+    mimeType: sourceMimeType,
+    fileNamePrefix: "inpaint-source",
+  });
+
+  appendImageToFormData({
+    formData,
+    fieldName: "mask",
+    base64: maskBase64,
+    mimeType: "image/png",
+    fileNamePrefix: "inpaint-mask",
+  });
+
+  console.log("[imageGeneration] requesting OpenAI inpaint", {
+    description: normalizedDescription,
+    model: "gpt-image-1",
+  });
+
+  const response = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log("[imageGeneration] OpenAI inpaint failed", response.status, errorText);
+    throw new Error("Не удалось дорисовать мебель.");
+  }
+
+  const data = (await response.json()) as OpenAIImageEditResponse;
+  const generatedBase64 = data.data?.[0]?.b64_json;
+
+  if (!generatedBase64) {
+    console.log("[imageGeneration] OpenAI inpaint missing image", data.error?.message ?? "unknown error");
+    throw new Error("OpenAI не вернул изображение для дорисовки.");
+  }
+
+  const mimeType = "image/png";
+  const uri = await persistBase64Image({
+    base64: generatedBase64,
+    mimeType,
+    fileNamePrefix: "inpaint-result",
+  });
+
+  return {
+    id: createId("variant"),
+    title: "Дорисовано",
+    subtitle: normalizedDescription,
+    image: {
+      uri,
+      mimeType,
+      width: 1024,
+      height: 1024,
+    },
+    createdAt: Date.now(),
+  };
+}

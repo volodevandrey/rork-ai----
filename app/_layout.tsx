@@ -39,6 +39,7 @@ function RootLayoutNav() {
       <Stack.Screen name="project/[projectId]/index" options={{ title: "Проект" }} />
       <Stack.Screen name="project/[projectId]/generating" options={{ headerShown: false }} />
       <Stack.Screen name="project/[projectId]/results" options={{ title: "Варианты" }} />
+      <Stack.Screen name="project/[projectId]/inpaint" options={{ title: "Дорисовать мебель" }} />
       <Stack.Screen
         name="project/[projectId]/compare"
         options={{

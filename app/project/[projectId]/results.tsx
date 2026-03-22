@@ -65,6 +65,19 @@ export default function ResultsScreen() {
     [project, projectId, updateProject],
   );
 
+  const handleInpaint = useCallback(
+    (variant: VariantItem) => {
+      router.push({
+        pathname: "/project/[projectId]/inpaint",
+        params: {
+          projectId,
+          variantId: variant.id,
+        },
+      });
+    },
+    [projectId],
+  );
+
   const handleRegenerateStrict = useCallback(() => {
     if (!project) {
       return;
@@ -159,20 +172,28 @@ export default function ResultsScreen() {
 
       <View style={styles.list}>
         {project.variants.map((variant) => (
-          <ResultCard
-            key={variant.id}
-            onCompare={() =>
-              router.push({
-                pathname: "/project/[projectId]/compare",
-                params: { projectId, variantId: variant.id },
-              })
-            }
-            onMore={() => handleMore(variant)}
-            onSave={(uri) => handleSave(uri)}
-            onShare={(uri) => handleShare(uri, variant)}
-            testId={`variant-${variant.id}`}
-            variant={variant}
-          />
+          <View key={variant.id} style={styles.resultGroup}>
+            <ResultCard
+              onCompare={() =>
+                router.push({
+                  pathname: "/project/[projectId]/compare",
+                  params: { projectId, variantId: variant.id },
+                })
+              }
+              onMore={() => handleMore(variant)}
+              onSave={(uri) => handleSave(uri)}
+              onShare={(uri) => handleShare(uri, variant)}
+              testId={`variant-${variant.id}`}
+              variant={variant}
+            />
+            <AppButton
+              icon={<Edit3 color={theme.colors.text} size={18} />}
+              label="Дорисовать мебель"
+              onPress={() => handleInpaint(variant)}
+              testId={`variant-${variant.id}-inpaint`}
+              variant="secondary"
+            />
+          </View>
         ))}
       </View>
     </AppScrollScreen>
@@ -204,6 +225,9 @@ const styles = StyleSheet.create({
   list: {
     gap: 16,
     marginBottom: 8,
+  },
+  resultGroup: {
+    gap: 12,
   },
   helperText: {
     color: theme.colors.textSecondary,
