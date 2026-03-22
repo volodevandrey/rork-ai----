@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { FolderOpen, LayoutTemplate, Settings, Sparkles } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
@@ -9,10 +9,17 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { appCopy, getModeTitle } from "@/constants/design";
 import theme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
+import { useCreditsStore } from "@/stores/creditsStore";
 
 export default function HomeScreen() {
   const { projects, templates, isHydrating } = useAppData();
+  const credits = useCreditsStore((state) => state.credits);
   const recentProject = projects[0] ?? null;
+  const isEmptyBalance = credits === 0;
+  const isLowBalance = credits > 0 && credits <= 5;
+  const balanceColor = isEmptyBalance ? theme.colors.danger : isLowBalance ? "#F2A65A" : theme.colors.accentStrong;
+  const balanceIcon = isLowBalance ? "⚠" : "✦";
+  const balanceLabel = isLowBalance ? `Осталось ${credits} кредитов` : `${credits} кредитов`;
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} safeAreaEdges={["top"]} testId="home-screen">
@@ -22,6 +29,17 @@ export default function HomeScreen() {
           <Text style={styles.heroBadgeText}>Точная визуализация мебели</Text>
         </View>
         <Text style={styles.title}>{appCopy.title}</Text>
+        <View style={styles.balanceRow} testID="home-credits-balance">
+          <Text style={[styles.balanceIcon, { color: balanceColor }]}>{balanceIcon}</Text>
+          <Text style={[styles.balanceText, { color: balanceColor }]}>{balanceLabel}</Text>
+          {isEmptyBalance ? (
+            <Pressable onPress={() => router.push("/shop")} testID="home-credits-topup">
+              {({ pressed }) => (
+                <Text style={[styles.balanceLink, pressed ? styles.balanceLinkPressed : null]}>Пополнить</Text>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={styles.subtitle}>{appCopy.subtitle}</Text>
         <View style={styles.ruleCard}>
           <Text style={styles.ruleTitle}>{appCopy.preservation}</Text>
@@ -144,6 +162,34 @@ const styles = StyleSheet.create({
     fontSize: 34,
     lineHeight: 40,
     fontWeight: "800",
+  },
+  balanceRow: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: theme.radii.pill,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  balanceIcon: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  balanceText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  balanceLink: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: "700",
+    textDecorationLine: "underline",
+  },
+  balanceLinkPressed: {
+    opacity: 0.7,
   },
   subtitle: {
     color: theme.colors.textSecondary,
