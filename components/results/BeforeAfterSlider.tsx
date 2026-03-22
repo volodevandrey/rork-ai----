@@ -25,6 +25,9 @@ export function BeforeAfterSlider(props: BeforeAfterSliderProps) {
   const [width, setWidth] = useState<number>(0);
   const [position, setPosition] = useState<number>(0.5);
 
+  const sliderOffset = width * position;
+  const clippedWidth = Math.max(sliderOffset, 0);
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -55,14 +58,18 @@ export function BeforeAfterSlider(props: BeforeAfterSliderProps) {
   return (
     <View style={styles.wrapper} testID={testId}>
       <View onLayout={handleLayout} style={styles.imageWrap} {...panResponder.panHandlers}>
-        <Image contentFit="cover" source={{ uri: afterUri }} style={styles.image} />
-        <View style={[styles.afterContainer, { width: `${position * 100}%` }]}>
-          <Image contentFit="cover" source={{ uri: beforeUri }} style={styles.image} />
+        <Image contentFit="cover" source={{ uri: beforeUri }} style={styles.imageLayer} />
+        <View style={[styles.afterClip, { width: clippedWidth }]}>
+          <Image
+            contentFit="cover"
+            source={{ uri: afterUri }}
+            style={[styles.imageLayer, styles.clippedImage, { width }]}
+          />
         </View>
-        <View style={[styles.divider, { left: `${position * 100}%` }]}>
+        <View style={[styles.divider, { left: sliderOffset }]}>
           <View style={styles.dividerHandle} />
         </View>
-        <View style={styles.labelRow}>
+        <View pointerEvents="none" style={styles.labelRow}>
           <View style={styles.labelPill}>
             <Text style={styles.labelText}>До</Text>
           </View>
@@ -88,13 +95,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  afterContainer: {
+  imageLayer: {
     ...StyleSheet.absoluteFillObject,
+  },
+  afterClip: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
     overflow: "hidden",
+  },
+  clippedImage: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
   },
   divider: {
     position: "absolute",
@@ -103,6 +118,7 @@ const styles = StyleSheet.create({
     width: 2,
     backgroundColor: theme.colors.text,
     marginLeft: -1,
+    pointerEvents: "none",
     alignItems: "center",
     justifyContent: "center",
   },
