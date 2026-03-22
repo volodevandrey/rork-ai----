@@ -50,6 +50,12 @@ const qualitySummaryLabels: Record<ImageQuality, string> = {
   high: "высокое качество",
 };
 
+const descriptionExamples: string[] = [
+  "Белый матовый + дуб",
+  "Графит + мрамор",
+  "Бежевый + камень",
+];
+
 function appendSnippet(currentValue: string, snippet: string): string {
   const trimmedValue = currentValue.trim();
   const trimmedSnippet = snippet.trim();
@@ -295,6 +301,17 @@ export default function ProjectDesignScreen() {
           testId="design-description"
           value={project.description}
         />
+        <View style={styles.chipWrap}>
+          {descriptionExamples.map((example) => (
+            <Chip
+              key={example}
+              label={example}
+              onPress={() => handleDescriptionChange(example)}
+              selected={project.description.trim() === example}
+              testId={`description-example-${example}`}
+            />
+          ))}
+        </View>
         <AppButton
           icon={<Mic color={theme.colors.text} size={18} />}
           label={isRecording ? "Остановить запись" : "Сказать голосом"}

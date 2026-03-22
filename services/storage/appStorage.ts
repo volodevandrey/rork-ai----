@@ -5,6 +5,7 @@ import { ImageQuality, ProjectItem, TemplateItem, VariantCount } from "@/types/a
 const PROJECTS_KEY = "@furniture-ai/projects";
 const TEMPLATES_KEY = "@furniture-ai/templates";
 const LAST_ACTIVE_PROJECT_KEY = "@furniture-ai/last-active-project";
+const ONBOARDING_SHOWN_KEY = "onboarding_shown";
 
 function parseVariantCount(value: unknown): VariantCount {
   if (value === 1 || value === 2 || value === 4) {
@@ -75,4 +76,22 @@ export async function loadLastActiveProjectId(): Promise<string | null> {
 
 export async function saveLastActiveProjectId(projectId: string | null): Promise<void> {
   await saveJson<string | null>(LAST_ACTIVE_PROJECT_KEY, projectId);
+}
+
+export async function loadOnboardingShown(): Promise<boolean> {
+  try {
+    const value = await AsyncStorage.getItem(ONBOARDING_SHOWN_KEY);
+    return value === "true";
+  } catch (error) {
+    console.log("[appStorage] load onboarding error", error);
+    return false;
+  }
+}
+
+export async function saveOnboardingShown(shown: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ONBOARDING_SHOWN_KEY, shown ? "true" : "false");
+  } catch (error) {
+    console.log("[appStorage] save onboarding error", error);
+  }
 }

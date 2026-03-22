@@ -32,7 +32,15 @@ export default function ResultsScreen() {
   const handleShare = useCallback(
     async (uri: string, variant: VariantItem) => {
       try {
-        await shareImage(uri, `${project?.title ?? "Проект"} — ${variant.title}`);
+        const result = await shareImage(uri, `${project?.title ?? "Проект"} — ${variant.title}`);
+
+        if (result === "saved") {
+          Alert.alert("Готово", "Шеринг недоступен. Изображение сохранено в галерею.");
+        }
+
+        if (result === "downloaded") {
+          Alert.alert("Готово", "Шеринг недоступен. Изображение загружено на устройство.");
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Не удалось поделиться результатом.";
         Alert.alert("Ошибка", message);
@@ -107,6 +115,13 @@ export default function ResultsScreen() {
     Alert.alert("Готово", "Шаблон сохранён.");
   }, [project, projectId, saveTemplateFromProject]);
 
+  const handleTryAgain = useCallback(() => {
+    router.push({
+      pathname: "/project/[projectId]",
+      params: { projectId },
+    });
+  }, [projectId]);
+
   if (!project || project.variants.length === 0) {
     return (
       <AppScrollScreen contentContainerStyle={styles.content} testId="empty-results-screen">
@@ -158,12 +173,7 @@ export default function ResultsScreen() {
           <AppButton
             icon={<Edit3 color={theme.colors.text} size={18} />}
             label="Изменить описание"
-            onPress={() =>
-              router.push({
-                pathname: "/project/[projectId]",
-                params: { projectId },
-              })
-            }
+            onPress={handleTryAgain}
             testId="edit-project"
             variant="secondary"
           />
@@ -195,6 +205,15 @@ export default function ResultsScreen() {
             />
           </View>
         ))}
+      </View>
+
+      <View style={styles.bottomActions}>
+        <AppButton
+          label="Изменить и создать заново"
+          onPress={handleTryAgain}
+          testId="results-try-again"
+          variant="secondary"
+        />
       </View>
     </AppScrollScreen>
   );
@@ -233,5 +252,9 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
+  },
+  bottomActions: {
+    gap: 12,
+    marginBottom: 8,
   },
 });

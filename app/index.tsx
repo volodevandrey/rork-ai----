@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { FolderOpen, LayoutTemplate, Settings, Sparkles } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
@@ -9,17 +10,54 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import { appCopy, getModeTitle } from "@/constants/design";
 import theme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
+import { loadOnboardingShown, saveOnboardingShown } from "@/services/storage/appStorage";
 import { useCreditsStore } from "@/stores/creditsStore";
 
 export default function HomeScreen() {
   const { projects, templates, isHydrating } = useAppData();
   const credits = useCreditsStore((state) => state.credits);
+  const onboardingAlertShownRef = useRef<boolean>(false);
   const recentProject = projects[0] ?? null;
   const isEmptyBalance = credits === 0;
   const isLowBalance = credits > 0 && credits <= 5;
   const balanceColor = isEmptyBalance ? theme.colors.danger : isLowBalance ? "#F2A65A" : theme.colors.accentStrong;
   const balanceIcon = isLowBalance ? "⚠" : "✦";
   const balanceLabel = isLowBalance ? `Осталось ${credits} кредитов` : `${credits} кредитов`;
+
+  useEffect(() => {
+    let isActive = true;
+
+    const checkOnboarding = async () => {
+      if (onboardingAlertShownRef.current) {
+        return;
+      }
+
+      const alreadyShown = await loadOnboardingShown();
+      if (!isActive || alreadyShown) {
+        return;
+      }
+
+      onboardingAlertShownRef.current = true;
+      Alert.alert(
+        "Добро пожаловать!",
+        "Как пользоваться:\n1. Сфотографируй мебель или загрузи эскиз\n2. Опиши что хочешь изменить\n3. Нажми Создать — AI всё сделает\n\nУ вас 10 бесплатных кредитов для старта!",
+        [
+          {
+            text: "Начать",
+            onPress: () => {
+              void saveOnboardingShown(true);
+            },
+          },
+        ],
+      );
+    };
+
+    void checkOnboarding();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} safeAreaEdges={["top"]} testId="home-screen">

@@ -77,8 +77,14 @@ export default function ShopScreen() {
         </View>
         <Text style={styles.heroTitle}>Выберите пакет кредитов</Text>
         <Text style={styles.heroSubtitle}>
-          Кредиты тратятся на генерации. При среднем качестве 1 вариант стоит 2 кредита.
+          Кредиты тратятся на генерации. Ниже видно, сколько стоит каждый уровень качества.
         </Text>
+        <View style={styles.explainerCard}>
+          <Text style={styles.explainerLine}>1 кредит = 1 генерация низкого качества</Text>
+          <Text style={styles.explainerLine}>2 кредита = 1 генерация среднего качества</Text>
+          <Text style={styles.explainerLine}>4 кредита = 1 генерация высокого качества</Text>
+          <Text style={styles.explainerFree}>Бесплатно: неограниченно в низком качестве</Text>
+        </View>
       </View>
 
       {creditPackages.map((creditPackage) => {
@@ -173,6 +179,24 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
+  },
+  explainerCard: {
+    gap: 8,
+    padding: 16,
+    borderRadius: theme.radii.lg,
+    backgroundColor: theme.colors.backgroundElevated,
+  },
+  explainerLine: {
+    color: theme.colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+  explainerFree: {
+    color: theme.colors.accentStrong,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700",
   },
   packageCard: {
     gap: 16,

@@ -82,7 +82,15 @@ export default function CompareScreen() {
 
     try {
       const uri = await captureBrandedUri();
-      await shareImage(uri, `${project?.title ?? "Проект"} — ${variant.title}`);
+      const result = await shareImage(uri, `${project?.title ?? "Проект"} — ${variant.title}`);
+
+      if (result === "saved") {
+        Alert.alert("Готово", "Шеринг недоступен. Изображение сохранено в галерею.");
+      }
+
+      if (result === "downloaded") {
+        Alert.alert("Готово", "Шеринг недоступен. Изображение загружено на устройство.");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось поделиться результатом.";
       Alert.alert("Ошибка", message);
@@ -121,7 +129,7 @@ export default function CompareScreen() {
       <View style={styles.actions}>
         <AppButton
           icon={<Save color={theme.colors.text} size={18} />}
-          label="Сохранить"
+          label="Сохранить в галерею"
           onPress={() => {
             void handleSave();
           }}

@@ -60,38 +60,46 @@ export function ResultCard(props: ResultCardProps) {
           <Text style={styles.subtitle}>{variant.subtitle}</Text>
         </View>
         <View style={styles.grid}>
-          <AppButton
-            icon={<ArrowLeftRight color={theme.colors.text} size={16} />}
-            label="До / После"
-            onPress={onCompare}
-            testId={`${testId}-compare`}
-            variant="secondary"
-          />
-          <AppButton
-            icon={<Save color={theme.colors.text} size={16} />}
-            label="Сохранить"
-            onPress={() => {
-              void handleSavePress();
-            }}
-            testId={`${testId}-save`}
-            variant="secondary"
-          />
-          <AppButton
-            icon={<Share2 color={theme.colors.text} size={16} />}
-            label="Поделиться"
-            onPress={() => {
-              void handleSharePress();
-            }}
-            testId={`${testId}-share`}
-            variant="secondary"
-          />
-          <AppButton
-            icon={<RefreshCcw color={theme.colors.text} size={16} />}
-            label="Ещё варианты"
-            onPress={onMore}
-            testId={`${testId}-more`}
-            variant="secondary"
-          />
+          <View style={styles.actionCell}>
+            <AppButton
+              icon={<ArrowLeftRight color={theme.colors.text} size={16} />}
+              label="До / После"
+              onPress={onCompare}
+              testId={`${testId}-compare`}
+              variant="secondary"
+            />
+          </View>
+          <View style={styles.actionCell}>
+            <AppButton
+              icon={<RefreshCcw color={theme.colors.text} size={16} />}
+              label="Ещё варианты"
+              onPress={onMore}
+              testId={`${testId}-more`}
+              variant="secondary"
+            />
+          </View>
+          <View style={styles.actionCell}>
+            <AppButton
+              icon={<Save color={theme.colors.text} size={16} />}
+              label="Сохранить в галерею"
+              onPress={() => {
+                void handleSavePress();
+              }}
+              testId={`${testId}-save`}
+              variant="secondary"
+            />
+          </View>
+          <View style={styles.actionCell}>
+            <AppButton
+              icon={<Share2 color={theme.colors.text} size={16} />}
+              label="Поделиться"
+              onPress={() => {
+                void handleSharePress();
+              }}
+              testId={`${testId}-share`}
+              variant="secondary"
+            />
+          </View>
         </View>
       </View>
     </View>
@@ -128,6 +136,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
+  },
+  actionCell: {
+    minWidth: 140,
+    flexGrow: 1,
+    flexBasis: "48%",
   },
 });

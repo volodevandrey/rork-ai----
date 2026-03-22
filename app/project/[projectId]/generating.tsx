@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +26,13 @@ import {
   VariantCount,
 } from "@/types/app";
 import { getSingleParam } from "@/utils/routes";
+
+class GenerationCancelledError extends Error {
+  constructor() {
+    super("Generation cancelled");
+    this.name = "GenerationCancelledError";
+  }
+}
 
 function parseStrictness(value: string | undefined, fallback: Strictness): Strictness {
   if (value === "standard" || value === "strict" || value === "maximum") {
@@ -89,6 +96,8 @@ export default function GenerationScreen() {
   const fallbackStrictness = project?.mode === "photo" ? "maximum" : "strict";
   const fallbackVariantCount = project?.variantCount ?? 2;
   const fallbackQuality = project?.quality ?? "medium";
+  const isCancelledRef = useRef<boolean>(false);
+  const isMountedRef = useRef<boolean>(true);
   const mode = useMemo(() => {
     return parseGenerationMode(modeParam);
   }, [modeParam]);
@@ -115,6 +124,12 @@ export default function GenerationScreen() {
     totalSteps: variantCount + 2,
   });
   const animation = useRef<Animated.Value>(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     setProgress((current) => ({
@@ -146,21 +161,24 @@ export default function GenerationScreen() {
     };
   }, [animation]);
 
+  const restoreProjectState = useCallback(() => {
+    updateProject(projectId, (current) => ({
+      ...current,
+      status: current.variants.length > 0 ? "ready" : "draft",
+      lastError: null,
+    }));
+  }, [projectId, updateProject]);
+
   const generationMutation = useMutation({
     mutationFn: async () => {
       if (!project) {
         throw new Error("Проект не найден.");
       }
 
-      if (mode === "pro") {
-        await spendCredits(quality, variantCount);
-      }
-
       const sourceBase64 = await readBase64FromUri(project.sourceImage.uri);
       const referenceVariant = project.variants.find((item) => item.id === referenceVariantId) ?? null;
       const referenceBase64 = referenceVariant ? await readBase64FromUri(referenceVariant.image.uri) : undefined;
-
-      return generateProjectVariants({
+      const variants = await generateProjectVariants({
         project,
         sourceBase64,
         strictness,
@@ -171,11 +189,33 @@ export default function GenerationScreen() {
         referenceMimeType: referenceVariant?.image.mimeType,
         referenceVariantTitle: referenceVariant?.title,
         onProgress: (stage, step, totalSteps) => {
+          if (!isMountedRef.current || isCancelledRef.current) {
+            return;
+          }
+
           setProgress({ stage, step, totalSteps });
         },
       });
+
+      if (isCancelledRef.current) {
+        throw new GenerationCancelledError();
+      }
+
+      if (mode === "pro") {
+        await spendCredits(quality, variantCount);
+      }
+
+      if (isCancelledRef.current) {
+        throw new GenerationCancelledError();
+      }
+
+      return variants;
     },
     onSuccess: (variants) => {
+      if (isCancelledRef.current || !isMountedRef.current) {
+        return;
+      }
+
       saveGeneratedVariants(projectId, variants, null);
       router.replace({
         pathname: "/project/[projectId]/results",
@@ -183,8 +223,12 @@ export default function GenerationScreen() {
       });
     },
     onError: (error) => {
-      const message =
-        error instanceof Error ? error.message : "Не удалось создать результат. Попробуйте ещё раз.";
+      if (error instanceof GenerationCancelledError || isCancelledRef.current) {
+        return;
+      }
+
+      console.log("[GenerationScreen] generation failed", error);
+      const message = "Генерация не удалась. Кредиты не списаны. Попробуйте ещё раз.";
       updateProject(projectId, (current) => ({
         ...current,
         status: "error",
@@ -206,6 +250,25 @@ export default function GenerationScreen() {
     setHasStarted(true);
     generationMutation.mutate();
   }, [generationMutation, hasStarted, project]);
+
+  const handleCancel = useCallback(() => {
+    Alert.alert("Отменить генерацию?", "Кредиты не будут списаны.", [
+      {
+        text: "Продолжать",
+        style: "cancel",
+      },
+      {
+        text: "Да, отменить",
+        style: "destructive",
+        onPress: () => {
+          console.log("[GenerationScreen] generation cancelled by user", projectId);
+          isCancelledRef.current = true;
+          restoreProjectState();
+          router.back();
+        },
+      },
+    ]);
+  }, [projectId, restoreProjectState]);
 
   const progressWidth = animation.interpolate({
     inputRange: [0, 1],
@@ -252,6 +315,15 @@ export default function GenerationScreen() {
           </View>
         </View>
       </View>
+
+      <View style={styles.footer}>
+        <AppButton
+          label="Отменить"
+          onPress={handleCancel}
+          testId="generation-cancel"
+          variant="secondary"
+        />
+      </View>
     </AppViewScreen>
   );
 }
@@ -266,6 +338,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     gap: 24,
+  },
+  footer: {
+    gap: 12,
+    paddingTop: 16,
   },
   previewWrap: {
     overflow: "hidden",
