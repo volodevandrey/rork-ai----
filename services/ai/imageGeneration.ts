@@ -300,8 +300,9 @@ async function requestVariant(params: {
     throw new Error("Стратегия генерации не найдена.");
   }
 
-  if (mode === "pro" && process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
+  if (process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
     try {
+      console.log("[imageGeneration] trying OpenAI first, mode=", mode);
       return await requestOpenAIVariant({
         prompt,
         sourceBase64,
@@ -314,6 +315,8 @@ async function requestVariant(params: {
       console.log("[imageGeneration] OpenAI failed, fallback to toolkit");
       console.log("[imageGeneration] OpenAI fallback reason", error);
     }
+  } else {
+    console.log("[imageGeneration] no OpenAI key, using toolkit directly");
   }
 
   return requestToolkitVariant({
