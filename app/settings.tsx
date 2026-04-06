@@ -1,5 +1,5 @@
 import { router, Stack } from "expo-router";
-import { Coins } from "lucide-react-native";
+import { Coins, KeyRound, ShieldCheck } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
 import { AppButton } from "@/components/ui/AppButton";
@@ -7,13 +7,40 @@ import { AppScrollScreen } from "@/components/ui/Screen";
 import { SectionCard } from "@/components/ui/SectionCard";
 import appTheme from "@/constants/theme";
 import { useCreditsStore } from "@/stores/creditsStore";
+import { useLicenseStore } from "@/stores/licenseStore";
 
 export default function SettingsScreen() {
   const credits = useCreditsStore((state) => state.credits);
+  const isLicenseActive = useLicenseStore((s) => s.isActive);
+  const daysLeft = useLicenseStore((s) => s.daysLeft);
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} testId="settings-screen">
       <Stack.Screen options={{ title: "Настройки" }} />
+
+      <SectionCard
+        title="Лицензия"
+        subtitle={isLicenseActive ? "Безлимитный доступ активен" : "Активируйте ключ для безлимита"}
+      >
+        {isLicenseActive ? (
+          <View style={styles.licenseActiveCard}>
+            <ShieldCheck color={appTheme.colors.success} size={22} />
+            <View style={styles.licenseInfo}>
+              <Text style={styles.licenseTitle}>Безлимит активен</Text>
+              <Text style={styles.licenseDays}>
+                Осталось {daysLeft} {daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+        <AppButton
+          icon={<KeyRound color={isLicenseActive ? appTheme.colors.text : "#241B10"} size={18} />}
+          label={isLicenseActive ? "Управление лицензией" : "Активировать ключ"}
+          onPress={() => router.push("/activate")}
+          testId="open-activate"
+          variant={isLicenseActive ? "secondary" : undefined}
+        />
+      </SectionCard>
 
       <SectionCard
         title="Кредиты"
@@ -66,6 +93,27 @@ const styles = StyleSheet.create({
   content: {
     gap: 20,
     paddingTop: 12,
+  },
+  licenseActiveCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
+  },
+  licenseInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  licenseTitle: {
+    color: appTheme.colors.success,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  licenseDays: {
+    color: appTheme.colors.textSecondary,
+    fontSize: 14,
   },
   creditsCard: {
     gap: 6,

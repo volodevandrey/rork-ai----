@@ -25,6 +25,7 @@ import {
 } from "@/services/media/voiceService";
 import { getCost } from "@/services/storage/creditsService";
 import { useCreditsStore } from "@/stores/creditsStore";
+import { useLicenseStore } from "@/stores/licenseStore";
 import { GenerationMode, ImageQuality, VariantCount } from "@/types/app";
 import { createAutoProjectTitle } from "@/utils/format";
 import { getSingleParam } from "@/utils/routes";
@@ -83,6 +84,7 @@ export default function ProjectDesignScreen() {
   const credits = useCreditsStore((state) => state.credits);
   const loaded = useCreditsStore((state) => state.loaded);
   const loadCredits = useCreditsStore((state) => state.loadCredits);
+  const isLicenseActive = useLicenseStore((s) => s.isActive);
   const [isRecording, setIsRecording] = useState<boolean>(false);
 
   const project = getProject(projectId);
@@ -214,7 +216,10 @@ export default function ProjectDesignScreen() {
         return;
       }
 
-      if (mode === "pro") {
+      // Если лицензия активна — пропускаем проверку кредитов, всегда pro
+      const effectiveMode = isLicenseActive ? "pro" : mode;
+
+      if (effectiveMode === "pro" && !isLicenseActive) {
         const availableCredits = loaded ? credits : await loadCredits();
 
         if (availableCredits < cost) {
@@ -246,8 +251,9 @@ export default function ProjectDesignScreen() {
         pathname: "/project/[projectId]/generating",
         params: {
           projectId,
-          mode,
-          ...(mode === "pro"
+          mode: effectiveMode,
+          licensed: isLicenseActive ? "true" : "false",
+          ...(effectiveMode === "pro"
             ? {
                 quality: project.quality,
                 variantCount: String(project.variantCount),
@@ -256,7 +262,7 @@ export default function ProjectDesignScreen() {
         },
       });
     },
-    [cost, credits, loadCredits, loaded, project, projectId, updateProject],
+    [cost, credits, isLicenseActive, loadCredits, loaded, project, projectId, updateProject],
   );
 
   if (!project) {
@@ -465,25 +471,39 @@ export default function ProjectDesignScreen() {
       ) : null}
 
       <View style={styles.footerActions}>
-        <AppButton
-          icon={<Sparkles color={appTheme.colors.text} size={18} />}
-          label="Попробовать бесплатно"
-          subtitle="1 вариант · низкое качество"
-          onPress={() => {
-            void handleGenerate("free");
-          }}
-          testId="generate-free"
-          variant="secondary"
-        />
-        <AppButton
-          icon={<Sparkles color="#241B10" size={18} />}
-          label={`Создать про · ${cost} кр.`}
-          subtitle={proSubtitle}
-          onPress={() => {
-            void handleGenerate("pro");
-          }}
-          testId="generate-variants"
-        />
+        {isLicenseActive ? (
+          <AppButton
+            icon={<Sparkles color="#241B10" size={18} />}
+            label="Создать варианты"
+            subtitle={proSubtitle}
+            onPress={() => {
+              void handleGenerate("pro");
+            }}
+            testId="generate-licensed"
+          />
+        ) : (
+          <>
+            <AppButton
+              icon={<Sparkles color={appTheme.colors.text} size={18} />}
+              label="Попробовать бесплатно"
+              subtitle="1 вариант · низкое качество"
+              onPress={() => {
+                void handleGenerate("free");
+              }}
+              testId="generate-free"
+              variant="secondary"
+            />
+            <AppButton
+              icon={<Sparkles color="#241B10" size={18} />}
+              label={`Создать про · ${cost} кр.`}
+              subtitle={proSubtitle}
+              onPress={() => {
+                void handleGenerate("pro");
+              }}
+              testId="generate-variants"
+            />
+          </>
+        )}
         {project.variants.length > 0 ? (
           <AppButton
             icon={<FolderOpen color={appTheme.colors.text} size={18} />}

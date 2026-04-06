@@ -82,6 +82,7 @@ export default function GenerationScreen() {
     variantCount?: string | string[];
     quality?: string | string[];
     mode?: string | string[];
+    licensed?: string | string[];
   }>();
   const projectId = getSingleParam(params.projectId);
   const strictnessParam = getSingleParam(params.strictness);
@@ -89,6 +90,7 @@ export default function GenerationScreen() {
   const variantCountParam = getSingleParam(params.variantCount);
   const qualityParam = getSingleParam(params.quality);
   const modeParam = getSingleParam(params.mode);
+  const isLicensed = getSingleParam(params.licensed) === "true";
   const { getProject, saveGeneratedVariants, updateProject } = useAppData();
   const spendCredits = useCreditsStore((state) => state.spendCredits);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
@@ -123,7 +125,8 @@ export default function GenerationScreen() {
     step: 1,
     totalSteps: variantCount + 2,
   });
-  const animation = useRef<Animated.Value>(new Animated.Value(0)).current;
+  const progressAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
+  const pulseAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
 
   useEffect(() => {
     return () => {
@@ -138,16 +141,30 @@ export default function GenerationScreen() {
     }));
   }, [variantCount]);
 
+  // Реальный прогресс — плавная анимация к текущему шагу
+  useEffect(() => {
+    const targetValue = progress.totalSteps > 0
+      ? Math.min(progress.step / progress.totalSteps, 1)
+      : 0;
+
+    Animated.timing(progressAnim, {
+      toValue: targetValue,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [progress.step, progress.totalSteps, progressAnim]);
+
+  // Пульсация — показывает что процесс идёт
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(animation, {
-          duration: 1100,
+        Animated.timing(pulseAnim, {
+          duration: 900,
           toValue: 1,
           useNativeDriver: false,
         }),
-        Animated.timing(animation, {
-          duration: 1100,
+        Animated.timing(pulseAnim, {
+          duration: 900,
           toValue: 0,
           useNativeDriver: false,
         }),
@@ -159,7 +176,7 @@ export default function GenerationScreen() {
     return () => {
       loop.stop();
     };
-  }, [animation]);
+  }, [pulseAnim]);
 
   const restoreProjectState = useCallback(() => {
     updateProject(projectId, (current) => ({
@@ -201,7 +218,7 @@ export default function GenerationScreen() {
         throw new GenerationCancelledError();
       }
 
-      if (mode === "pro") {
+      if (mode === "pro" && !isLicensed) {
         await spendCredits(quality, variantCount);
       }
 
@@ -270,9 +287,20 @@ export default function GenerationScreen() {
     ]);
   }, [projectId, restoreProjectState]);
 
-  const progressWidth = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["24%", "92%"],
+  // Ширина прогрессбара: реальный прогресс (10-95%) + лёгкая пульсация
+  const progressWidth = Animated.add(
+    progressAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [10, 95],
+    }),
+    pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 3],
+    }),
+  ).interpolate({
+    inputRange: [0, 100],
+    outputRange: ["0%", "100%"],
+    extrapolate: "clamp",
   });
 
   if (!project) {

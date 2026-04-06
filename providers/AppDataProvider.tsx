@@ -148,11 +148,25 @@ export const [AppDataProvider, useAppData] = createContextHook(() => {
       }
 
       console.log("[AppDataProvider] delete project", projectId);
-      await deleteImageIfNeeded(project.sourceImage.uri);
+
+      // Собираем ВСЕ URI картинок для удаления
+      const imageUris = new Set<string>();
+      imageUris.add(project.sourceImage.uri);
+
+      // Текущие варианты
+      for (const variant of project.variants) {
+        imageUris.add(variant.image.uri);
+      }
+
+      // Варианты из истории
+      for (const session of project.history) {
+        for (const variant of session.variants) {
+          imageUris.add(variant.image.uri);
+        }
+      }
+
       await Promise.all(
-        project.history.flatMap((session) =>
-          session.variants.map((variant) => deleteImageIfNeeded(variant.image.uri)),
-        ),
+        Array.from(imageUris).map((uri) => deleteImageIfNeeded(uri)),
       );
 
       setProjects((current) => current.filter((item) => item.id !== projectId));

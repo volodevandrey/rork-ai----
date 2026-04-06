@@ -12,17 +12,30 @@ import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { loadOnboardingShown, saveOnboardingShown } from "@/services/storage/appStorage";
 import { useCreditsStore } from "@/stores/creditsStore";
+import { useLicenseStore } from "@/stores/licenseStore";
 
 export default function HomeScreen() {
   const { projects, templates, isHydrating } = useAppData();
   const credits = useCreditsStore((state) => state.credits);
+  const isLicenseActive = useLicenseStore((s) => s.isActive);
+  const daysLeft = useLicenseStore((s) => s.daysLeft);
   const onboardingAlertShownRef = useRef<boolean>(false);
   const recentProject = projects[0] ?? null;
-  const isEmptyBalance = credits === 0;
-  const isLowBalance = credits > 0 && credits <= 5;
-  const balanceColor = isEmptyBalance ? appTheme.colors.danger : isLowBalance ? "#F2A65A" : appTheme.colors.accentStrong;
-  const balanceIcon = isLowBalance ? "⚠" : "✦";
-  const balanceLabel = isLowBalance ? `Осталось ${credits} кредитов` : `${credits} кредитов`;
+  const isEmptyBalance = !isLicenseActive && credits === 0;
+  const isLowBalance = !isLicenseActive && credits > 0 && credits <= 5;
+  const balanceColor = isLicenseActive
+    ? appTheme.colors.success
+    : isEmptyBalance
+      ? appTheme.colors.danger
+      : isLowBalance
+        ? "#F2A65A"
+        : appTheme.colors.accentStrong;
+  const balanceIcon = isLicenseActive ? "✦" : isLowBalance ? "⚠" : "✦";
+  const balanceLabel = isLicenseActive
+    ? `Безлимит · ${daysLeft}д`
+    : isLowBalance
+      ? `Осталось ${credits} кредитов`
+      : `${credits} кредитов`;
 
   useEffect(() => {
     let isActive = true;

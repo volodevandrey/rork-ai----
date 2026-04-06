@@ -8,6 +8,7 @@ import { AppErrorBoundary } from "@/components/ui/AppErrorBoundary";
 import appTheme from "@/constants/theme";
 import { AppDataProvider } from "@/providers/AppDataProvider";
 import { useCreditsStore } from "@/stores/creditsStore";
+import { useLicenseStore } from "@/stores/licenseStore";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -38,6 +39,7 @@ function RootLayoutNav() {
       <Stack.Screen name="projects" options={{ title: "Мои проекты" }} />
       <Stack.Screen name="settings" options={{ title: "Настройки" }} />
       <Stack.Screen name="shop" options={{ title: "Магазин кредитов" }} />
+      <Stack.Screen name="activate" options={{ title: "Активация" }} />
       <Stack.Screen name="project/[projectId]/index" options={{ title: "Проект" }} />
       <Stack.Screen name="project/[projectId]/generating" options={{ headerShown: false }} />
       <Stack.Screen name="project/[projectId]/results" options={{ title: "Варианты" }} />
@@ -59,8 +61,11 @@ export default function RootLayout() {
 
     const prepareApp = async () => {
       try {
-        console.log("[RootLayout] loading credits on startup");
-        await useCreditsStore.getState().loadCredits();
+        console.log("[RootLayout] loading credits and license on startup");
+        await Promise.all([
+          useCreditsStore.getState().loadCredits(),
+          useLicenseStore.getState().loadLicense(),
+        ]);
       } finally {
         if (isMounted) {
           await SplashScreen.hideAsync();

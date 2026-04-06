@@ -10,6 +10,7 @@ import { SectionCard } from "@/components/ui/SectionCard";
 import appTheme from "@/constants/theme";
 import { useAppData } from "@/providers/AppDataProvider";
 import { saveImageToGallery, shareImage } from "@/services/actions/exportService";
+import { useLicenseStore } from "@/stores/licenseStore";
 import { VariantItem } from "@/types/app";
 import { getSingleParam } from "@/utils/routes";
 
@@ -17,6 +18,7 @@ export default function ResultsScreen() {
   const params = useLocalSearchParams<{ projectId: string | string[] }>();
   const projectId = getSingleParam(params.projectId);
   const { getProject, saveTemplateFromProject, updateProject } = useAppData();
+  const isLicenseActive = useLicenseStore((s) => s.isActive);
   const project = getProject(projectId);
 
   const handleSave = useCallback(async (uri: string) => {
@@ -67,10 +69,11 @@ export default function ResultsScreen() {
           projectId,
           referenceVariantId: variant.id,
           strictness: project.mode === "photo" ? "maximum" : "strict",
+          licensed: isLicenseActive ? "true" : "false",
         },
       });
     },
-    [project, projectId, updateProject],
+    [isLicenseActive, project, projectId, updateProject],
   );
 
   const handleInpaint = useCallback(
@@ -102,9 +105,10 @@ export default function ResultsScreen() {
       params: {
         projectId,
         strictness: "maximum",
+        licensed: isLicenseActive ? "true" : "false",
       },
     });
-  }, [project, projectId, updateProject]);
+  }, [isLicenseActive, project, projectId, updateProject]);
 
   const handleSaveTemplate = useCallback(() => {
     if (!project) {

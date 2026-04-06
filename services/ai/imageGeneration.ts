@@ -404,69 +404,110 @@ export async function inpaintFurniture(params: {
   const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
   const normalizedDescription = description.trim();
 
-  if (!apiKey) {
-    console.log("[imageGeneration] missing EXPO_PUBLIC_OPENAI_API_KEY");
-    throw new Error("Не настроен OpenAI API key. Добавьте EXPO_PUBLIC_OPENAI_API_KEY и попробуйте снова.");
-  }
-
   if (!normalizedDescription) {
     throw new Error("Опишите, какую мебель нужно дорисовать.");
   }
 
-  const formData = new FormData();
-  formData.append("model", "gpt-image-1");
-  formData.append(
-    "prompt",
-    `Add ${normalizedDescription} in the same style as existing furniture. Preserve all existing furniture exactly.`,
-  );
-  formData.append("n", "1");
-  formData.append("size", "1024x1024");
-  formData.append("output_format", "png");
+  // Попытка через OpenAI (если есть ключ)
+  if (apiKey) {
+    try {
+      console.log("[imageGeneration] trying OpenAI inpaint");
 
-  appendImageToFormData({
-    formData,
-    fieldName: "image",
-    base64: sourceBase64,
-    mimeType: sourceMimeType,
-    fileNamePrefix: "inpaint-source",
-  });
+      const formData = new FormData();
+      formData.append("model", "gpt-image-1");
+      formData.append(
+        "prompt",
+        `Add ${normalizedDescription} in the same style as existing furniture. Preserve all existing furniture exactly.`,
+      );
+      formData.append("n", "1");
+      formData.append("size", "1024x1024");
+      formData.append("output_format", "png");
 
-  appendImageToFormData({
-    formData,
-    fieldName: "mask",
-    base64: maskBase64,
-    mimeType: "image/png",
-    fileNamePrefix: "inpaint-mask",
-  });
+      appendImageToFormData({
+        formData,
+        fieldName: "image",
+        base64: sourceBase64,
+        mimeType: sourceMimeType,
+        fileNamePrefix: "inpaint-source",
+      });
 
-  console.log("[imageGeneration] requesting OpenAI inpaint", {
-    description: normalizedDescription,
-    model: "gpt-image-1",
-  });
+      appendImageToFormData({
+        formData,
+        fieldName: "mask",
+        base64: maskBase64,
+        mimeType: "image/png",
+        fileNamePrefix: "inpaint-mask",
+      });
 
-  const response = await fetch("https://api.openai.com/v1/images/edits", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
+      const response = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.log("[imageGeneration] OpenAI inpaint failed", response.status, errorText);
-    throw new Error("Не удалось дорисовать мебель.");
+      if (response.ok) {
+        const data = (await response.json()) as OpenAIImageEditResponse;
+        const generatedBase64 = data.data?.[0]?.b64_json;
+
+        if (generatedBase64) {
+          const mimeType = "image/png";
+          const uri = await persistBase64Image({
+            base64: generatedBase64,
+            mimeType,
+            fileNamePrefix: "inpaint-result",
+          });
+
+          return {
+            id: createId("variant"),
+            title: "Дорисовано",
+            subtitle: normalizedDescription,
+            image: { uri, mimeType, width: 1024, height: 1024 },
+            createdAt: Date.now(),
+          };
+        }
+      }
+
+      console.log("[imageGeneration] OpenAI inpaint failed, fallback to toolkit");
+    } catch (error) {
+      console.log("[imageGeneration] OpenAI inpaint error, fallback to toolkit", error);
+    }
+  } else {
+    console.log("[imageGeneration] no OpenAI key, using toolkit for inpaint");
   }
 
-  const data = (await response.json()) as OpenAIImageEditResponse;
-  const generatedBase64 = data.data?.[0]?.b64_json;
+  // Фолбэк через Rork Toolkit
+  const toolkitPrompt = `Add ${normalizedDescription} in the marked area, matching the style of existing furniture. Preserve everything else exactly as is.`;
+
+  const toolkitResponse = await fetch(getToolkitImageEditUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: toolkitPrompt,
+      images: [
+        { type: "image", image: sourceBase64 },
+        { type: "image", image: maskBase64 },
+      ],
+      aspectRatio: "1:1",
+      quality: "medium",
+    }),
+  });
+
+  if (!toolkitResponse.ok) {
+    const errorText = await toolkitResponse.text();
+    console.log("[imageGeneration] toolkit inpaint failed", toolkitResponse.status, errorText);
+    throw new Error("Не удалось дорисовать мебель. Попробуйте ещё раз.");
+  }
+
+  const toolkitData = (await toolkitResponse.json()) as ToolkitImageEditResponse;
+  const generatedBase64 = toolkitData.image?.base64Data;
+  const mimeType = toolkitData.image?.mimeType ?? "image/png";
 
   if (!generatedBase64) {
-    console.log("[imageGeneration] OpenAI inpaint missing image", data.error?.message ?? "unknown error");
-    throw new Error("OpenAI не вернул изображение для дорисовки.");
+    throw new Error("Сервис не вернул изображение для дорисовки.");
   }
 
-  const mimeType = "image/png";
   const uri = await persistBase64Image({
     base64: generatedBase64,
     mimeType,
@@ -477,12 +518,7 @@ export async function inpaintFurniture(params: {
     id: createId("variant"),
     title: "Дорисовано",
     subtitle: normalizedDescription,
-    image: {
-      uri,
-      mimeType,
-      width: 1024,
-      height: 1024,
-    },
+    image: { uri, mimeType, width: 1024, height: 1024 },
     createdAt: Date.now(),
   };
 }
