@@ -1,52 +1,29 @@
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
+import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 
 import { StoredImage } from "@/types/app";
 import { persistBase64Image } from "@/services/storage/fileStorage";
 
-async function optimizeAsset(uri: string): Promise<{
-  base64: string;
-  width: number;
-  height: number;
-}> {
-  const result = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: 1600 } }],
-    {
-      compress: 0.82,
-      format: ImageManipulator.SaveFormat.JPEG,
-      base64: true,
-    },
-  );
+async function createStoredImage(uri: string, width: number, height: number, fileNamePrefix: string): Promise<StoredImage> {
+  const mimeType = "image/jpeg";
 
-  if (!result.base64) {
-    throw new Error("Не удалось подготовить изображение.");
+  if (Platform.OS === "web" || uri.startsWith("data:")) {
+    // Веб: URI уже data-url или blob
+    const base64 = uri.startsWith("data:") ? uri.split(",")[1] ?? "" : "";
+    const persistedUri = await persistBase64Image({ base64, mimeType, fileNamePrefix });
+    return { uri: persistedUri, mimeType, width, height };
   }
 
-  return {
-    base64: result.base64,
-    width: result.width,
-    height: result.height,
-  };
-}
-
-async function createStoredImage(uri: string, fileNamePrefix: string): Promise<StoredImage> {
-  const optimized = await optimizeAsset(uri);
-  const mimeType = "image/jpeg";
-  const persistedUri = await persistBase64Image({
-    base64: optimized.base64,
-    mimeType,
-    fileNamePrefix,
+  // Нативные платформы: читаем файл как base64
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
   });
 
+  const persistedUri = await persistBase64Image({ base64, mimeType, fileNamePrefix });
   console.log("[imageService] stored image created", persistedUri);
 
-  return {
-    uri: persistedUri,
-    mimeType,
-    width: optimized.width,
-    height: optimized.height,
-  };
+  return { uri: persistedUri, mimeType, width, height };
 }
 
 export async function pickImageFromLibrary(fileNamePrefix: string): Promise<StoredImage | null> {
@@ -59,14 +36,15 @@ export async function pickImageFromLibrary(fileNamePrefix: string): Promise<Stor
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: false,
-    quality: 0.9,
+    quality: 0.8,
   });
 
   if (result.canceled || !result.assets?.[0]) {
     return null;
   }
 
-  return createStoredImage(result.assets[0].uri, fileNamePrefix);
+  const asset = result.assets[0];
+  return createStoredImage(asset.uri, asset.width, asset.height, fileNamePrefix);
 }
 
 export async function captureImage(fileNamePrefix: string): Promise<StoredImage | null> {
@@ -79,7 +57,7 @@ export async function captureImage(fileNamePrefix: string): Promise<StoredImage 
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: false,
-    quality: 0.9,
+    quality: 0.8,
     cameraType: ImagePicker.CameraType.back,
   });
 
@@ -87,5 +65,6 @@ export async function captureImage(fileNamePrefix: string): Promise<StoredImage 
     return null;
   }
 
-  return createStoredImage(result.assets[0].uri, fileNamePrefix);
+  const asset = result.assets[0];
+  return createStoredImage(asset.uri, asset.width, asset.height, fileNamePrefix);
 }
