@@ -9,13 +9,11 @@ async function createStoredImage(uri: string, width: number, height: number, fil
   const mimeType = "image/jpeg";
 
   if (Platform.OS === "web" || uri.startsWith("data:")) {
-    // Веб: URI уже data-url или blob
     const base64 = uri.startsWith("data:") ? uri.split(",")[1] ?? "" : "";
     const persistedUri = await persistBase64Image({ base64, mimeType, fileNamePrefix });
     return { uri: persistedUri, mimeType, width, height };
   }
 
-  // Нативные платформы: читаем файл как base64
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
