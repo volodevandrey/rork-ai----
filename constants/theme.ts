@@ -1,0 +1,45 @@
+const appTheme = {
+  colors: {
+    background: "#0F0E0C",
+    backgroundElevated: "#141210",
+    surface: "#1A1815",
+    surfaceAlt: "#221F1B",
+    surfaceMuted: "#2A2621",
+    accent: "#D8BA8A",
+    accentStrong: "#E7CAA0",
+    accentSoft: "rgba(216, 186, 138, 0.14)",
+    text: "#FAF7F1",
+    textSecondary: "#C9C2B8",
+    textMuted: "#8E877F",
+    border: "rgba(231, 202, 160, 0.12)",
+    success: "#6E9E7B",
+    danger: "#B56A63",
+    shadow: "rgba(0, 0, 0, 0.35)",
+    overlay: "rgba(8, 8, 8, 0.72)",
+    sliderTrack: "rgba(255, 255, 255, 0.12)",
+  },
+  spacing: {
+    xs: 6,
+    sm: 10,
+    md: 14,
+    lg: 18,
+    xl: 24,
+    xxl: 32,
+  },
+  radii: {
+    sm: 12,
+    md: 18,
+    lg: 24,
+    xl: 30,
+    pill: 999,
+  },
+  shadow: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+};
+
+export default appTheme;

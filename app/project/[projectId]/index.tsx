@@ -1,0 +1,590 @@
+import { Image } from "expo-image";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Bookmark, FolderOpen, LayoutTemplate, Mic, Palette, Sparkles } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
+
+import { AppButton } from "@/components/ui/AppButton";
+import { Chip } from "@/components/ui/Chip";
+import { AppTextField } from "@/components/ui/AppTextField";
+import { AppScrollScreen } from "@/components/ui/Screen";
+import { SectionCard } from "@/components/ui/SectionCard";
+import {
+  beautifulSuggestions,
+  getModeHint,
+  quickMaterials,
+  smartPromptExamples,
+  stylePresets,
+  zoneOptions,
+} from "@/constants/design";
+import appTheme from "@/constants/theme";
+import { useAppData } from "@/providers/AppDataProvider";
+import {
+  startVoiceCapture,
+  stopVoiceCaptureAndTranscribe,
+} from "@/services/media/voiceService";
+import { getCost } from "@/services/storage/creditsService";
+import { useCreditsStore } from "@/stores/creditsStore";
+import { useLicenseStore } from "@/stores/licenseStore";
+import { GenerationMode, ImageQuality, VariantCount } from "@/types/app";
+import { createAutoProjectTitle } from "@/utils/format";
+import { getSingleParam } from "@/utils/routes";
+
+const variantCountOptions: { value: VariantCount; label: string }[] = [
+  { value: 1, label: "1 вариант" },
+  { value: 2, label: "2 варианта" },
+  { value: 4, label: "4 варианта" },
+];
+
+const qualityOptions: {
+  value: ImageQuality;
+  label: string;
+}[] = [
+  { value: "low", label: "Быстро · 1 кр/вар" },
+  { value: "medium", label: "Баланс · 2 кр/вар" },
+  { value: "high", label: "Максимум · 4 кр/вар" },
+];
+
+const qualitySummaryLabels: Record<ImageQuality, string> = {
+  low: "низкое качество",
+  medium: "среднее качество",
+  high: "высокое качество",
+};
+
+const descriptionExamples: string[] = [
+  "Белый матовый + дуб",
+  "Графит + мрамор",
+  "Бежевый + камень",
+];
+
+function appendSnippet(currentValue: string, snippet: string): string {
+  const trimmedValue = currentValue.trim();
+  const trimmedSnippet = snippet.trim();
+
+  if (!trimmedValue) {
+    return trimmedSnippet;
+  }
+
+  if (trimmedValue.toLowerCase().includes(trimmedSnippet.toLowerCase())) {
+    return trimmedValue;
+  }
+
+  return `${trimmedValue}, ${trimmedSnippet}`;
+}
+
+export default function ProjectDesignScreen() {
+  const params = useLocalSearchParams<{ projectId: string | string[] }>();
+  const projectId = getSingleParam(params.projectId);
+  const {
+    getProject,
+    saveTemplateFromProject,
+    templates,
+    updateProject,
+  } = useAppData();
+  const credits = useCreditsStore((state) => state.credits);
+  const loaded = useCreditsStore((state) => state.loaded);
+  const loadCredits = useCreditsStore((state) => state.loadCredits);
+  const isLicenseActive = useLicenseStore((s) => s.isActive);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+
+  const project = getProject(projectId);
+  const currentTemplate = useMemo(() => {
+    if (!project?.selectedTemplateId) {
+      return null;
+    }
+
+    return templates.find((item) => item.id === project.selectedTemplateId) ?? null;
+  }, [project?.selectedTemplateId, templates]);
+
+  const cost = useMemo(() => {
+    if (!project) {
+      return 0;
+    }
+
+    return getCost(project.quality, project.variantCount);
+  }, [project]);
+
+  const proSubtitle = useMemo(() => {
+    if (!project) {
+      return "";
+    }
+
+    const variantLabel = `${project.variantCount} ${project.variantCount === 1 ? "вариант" : "варианта"}`;
+    const qualityLabel = qualitySummaryLabels[project.quality];
+    return `${variantLabel} · ${qualityLabel}`;
+  }, [project]);
+
+  const handleDescriptionChange = useCallback(
+    (value: string) => {
+      updateProject(projectId, (current) => ({
+        ...current,
+        description: value,
+        title:
+          current.description.trim().length > 0 || value.trim().length === 0
+            ? current.title
+            : createAutoProjectTitle(current.mode, value),
+      }));
+    },
+    [projectId, updateProject],
+  );
+
+  const handleVoiceInput = useCallback(async () => {
+    try {
+      if (!isRecording) {
+        await startVoiceCapture();
+        setIsRecording(true);
+        return;
+      }
+
+      const text = await stopVoiceCaptureAndTranscribe();
+      setIsRecording(false);
+      updateProject(projectId, (current) => {
+        const nextDescription = appendSnippet(current.description, text);
+        return {
+          ...current,
+          description: nextDescription,
+          voiceText: text,
+          title:
+            current.description.trim().length > 0
+              ? current.title
+              : createAutoProjectTitle(current.mode, text),
+        };
+      });
+    } catch (error) {
+      setIsRecording(false);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Не удалось распознать речь. Попробуйте ещё раз или введите текст вручную.";
+      Alert.alert("Ошибка", message);
+    }
+  }, [isRecording, projectId, updateProject]);
+
+  const handleSuggestStyle = useCallback(() => {
+    if (!project) {
+      return;
+    }
+
+    const availableStyles = stylePresets.filter((item) => item.id !== project.styleId);
+    const nextStyle =
+      availableStyles[Math.floor(Math.random() * availableStyles.length)] ?? stylePresets[0];
+
+    updateProject(projectId, (current) => ({
+      ...current,
+      styleId: nextStyle.id,
+    }));
+  }, [project, projectId, updateProject]);
+
+  const handleBeautiful = useCallback(() => {
+    if (!project) {
+      return;
+    }
+
+    const options = beautifulSuggestions[project.mode];
+    const suggestion = options[Math.floor(Math.random() * options.length)] ?? options[0] ?? "";
+    handleDescriptionChange(suggestion);
+  }, [handleDescriptionChange, project]);
+
+  const handleSaveTemplate = useCallback(() => {
+    if (!project) {
+      return;
+    }
+
+    if (!project.description.trim() && !project.styleId) {
+      Alert.alert(
+        "Недостаточно данных",
+        "Опишите дизайн или выберите стиль, чтобы сохранить шаблон.",
+      );
+      return;
+    }
+
+    saveTemplateFromProject(projectId);
+    Alert.alert("Готово", "Шаблон сохранён.");
+  }, [project, projectId, saveTemplateFromProject]);
+
+  const handleGenerate = useCallback(
+    async (mode: GenerationMode) => {
+      if (!project) {
+        return;
+      }
+
+      if (!project.description.trim() && !project.styleId) {
+        Alert.alert(
+          "Нужно уточнение",
+          `Опишите, что хотите изменить. Например: ${smartPromptExamples[0]}`,
+        );
+        return;
+      }
+
+      // Если лицензия активна — пропускаем проверку кредитов, всегда pro
+      const effectiveMode = isLicenseActive ? "pro" : mode;
+
+      if (effectiveMode === "pro" && !isLicenseActive) {
+        const availableCredits = loaded ? credits : await loadCredits();
+
+        if (availableCredits < cost) {
+          Alert.alert(
+            "Недостаточно кредитов",
+            `Нужно ${cost}, у вас ${availableCredits}.\nПополнить?`,
+            [
+              {
+                text: "Пополнить",
+                onPress: () => router.push("/shop"),
+              },
+              {
+                text: "Отмена",
+                style: "cancel",
+              },
+            ],
+          );
+          return;
+        }
+      }
+
+      updateProject(projectId, (current) => ({
+        ...current,
+        status: "generating",
+        lastError: null,
+      }));
+
+      router.push({
+        pathname: "/project/[projectId]/generating",
+        params: {
+          projectId,
+          mode: effectiveMode,
+          licensed: isLicenseActive ? "true" : "false",
+          ...(effectiveMode === "pro"
+            ? {
+                quality: project.quality,
+                variantCount: String(project.variantCount),
+              }
+            : {}),
+        },
+      });
+    },
+    [cost, credits, isLicenseActive, loadCredits, loaded, project, projectId, updateProject],
+  );
+
+  if (!project) {
+    return (
+      <AppScrollScreen contentContainerStyle={styles.content} testId="project-missing-screen">
+        <SectionCard title="Проект не найден">
+          <Text style={styles.helperText}>Откройте список проектов и выберите нужный проект заново.</Text>
+          <AppButton label="Мои проекты" onPress={() => router.replace("/projects")} />
+        </SectionCard>
+      </AppScrollScreen>
+    );
+  }
+
+  return (
+    <AppScrollScreen contentContainerStyle={styles.content} testId="project-screen">
+      <Stack.Screen options={{ title: `${project.title} · ${loaded ? credits : "..."} кр.` }} />
+
+      <SectionCard
+        title="Исходное изображение"
+        subtitle={getModeHint(project.mode)}
+      >
+        <Image contentFit="cover" source={{ uri: project.sourceImage.uri }} style={styles.previewImage} />
+        <View style={styles.ruleBanner}>
+          <Text style={styles.ruleBannerTitle}>Главное правило</Text>
+          <Text style={styles.ruleBannerText}>
+            Конструкция мебели и ракурс сохраняются. Меняется только внешний вид.
+          </Text>
+        </View>
+        {currentTemplate ? (
+          <View style={styles.templateBadge}>
+            <Text style={styles.templateBadgeText}>Шаблон: {currentTemplate.name}</Text>
+          </View>
+        ) : null}
+      </SectionCard>
+
+      <SectionCard title="Описание дизайна" subtitle="Текст можно ввести вручную или надиктовать голосом">
+        <AppTextField
+          label="Описание дизайна"
+          multiline
+          onChangeText={handleDescriptionChange}
+          placeholder="Например: верх белый матовый, низ дуб, столешница бетон"
+          testId="design-description"
+          value={project.description}
+        />
+        <View style={styles.chipWrap}>
+          {descriptionExamples.map((example) => (
+            <Chip
+              key={example}
+              label={example}
+              onPress={() => handleDescriptionChange(example)}
+              selected={project.description.trim() === example}
+              testId={`description-example-${example}`}
+            />
+          ))}
+        </View>
+        <AppButton
+          icon={<Mic color={appTheme.colors.text} size={18} />}
+          label={isRecording ? "Остановить запись" : "Сказать голосом"}
+          onPress={handleVoiceInput}
+          testId="voice-input"
+          variant="secondary"
+        />
+        <View style={styles.examplesWrap}>
+          {smartPromptExamples.map((example) => (
+            <Text key={example} style={styles.exampleText}>
+              • {example}
+            </Text>
+          ))}
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Предложить стиль" subtitle="Выберите направление или доверьтесь приложению">
+        <View style={styles.buttonRow}>
+          <AppButton
+            icon={<Palette color={appTheme.colors.text} size={18} />}
+            label="Предложить стиль"
+            onPress={handleSuggestStyle}
+            testId="suggest-style"
+            variant="secondary"
+          />
+          <AppButton
+            icon={<Sparkles color={appTheme.colors.text} size={18} />}
+            label="Сделать красиво"
+            onPress={handleBeautiful}
+            testId="make-beautiful"
+            variant="secondary"
+          />
+        </View>
+        <View style={styles.chipWrap}>
+          {stylePresets.map((style) => (
+            <Chip
+              key={style.id}
+              label={style.title}
+              onPress={() =>
+                updateProject(projectId, (current) => ({
+                  ...current,
+                  styleId: current.styleId === style.id ? null : style.id,
+                }))
+              }
+              selected={project.styleId === style.id}
+              testId={`style-${style.id}`}
+            />
+          ))}
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Готовые материалы" subtitle="Быстрый способ собрать понятное описание">
+        <View style={styles.chipWrap}>
+          {quickMaterials.map((material) => (
+            <Chip
+              key={material.id}
+              label={material.label}
+              onPress={() => handleDescriptionChange(appendSnippet(project.description, material.snippet))}
+              selected={project.description.toLowerCase().includes(material.snippet.toLowerCase())}
+              testId={`material-${material.id}`}
+            />
+          ))}
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Что изменить" subtitle="Можно ограничить обработку только нужными зонами">
+        <View style={styles.chipWrap}>
+          {zoneOptions.map((zone) => (
+            <Chip
+              key={zone.id}
+              label={zone.title}
+              onPress={() =>
+                updateProject(projectId, (current) => ({
+                  ...current,
+                  zone: zone.id,
+                }))
+              }
+              selected={project.zone === zone.id}
+              testId={`zone-${zone.id}`}
+            />
+          ))}
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Шаблоны" subtitle="Сохраняйте удачные комбинации и применяйте их позже">
+        <View style={styles.buttonRow}>
+          <AppButton
+            icon={<Bookmark color={appTheme.colors.text} size={18} />}
+            label="Сохранить шаблон"
+            onPress={handleSaveTemplate}
+            testId="save-template"
+            variant="secondary"
+          />
+          <AppButton
+            icon={<LayoutTemplate color={appTheme.colors.text} size={18} />}
+            label="Применить шаблон"
+            onPress={() =>
+              router.push({
+                pathname: "/templates",
+                params: { applyTo: projectId },
+              })
+            }
+            testId="apply-template"
+            variant="secondary"
+          />
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Количество вариантов" subtitle="Больше вариантов — дольше генерация, но шире выбор">
+        <View style={styles.chipWrap}>
+          {variantCountOptions.map((option) => (
+            <Chip
+              key={option.value}
+              label={option.label}
+              onPress={() =>
+                updateProject(projectId, (current) => ({
+                  ...current,
+                  variantCount: option.value,
+                }))
+              }
+              selected={project.variantCount === option.value}
+              testId={`variant-count-${option.value}`}
+            />
+          ))}
+        </View>
+      </SectionCard>
+
+      <SectionCard title="Качество генерации" subtitle="Больше деталей — выше стоимость и дольше ожидание">
+        <View style={styles.chipWrap}>
+          {qualityOptions.map((option) => (
+            <Chip
+              key={option.value}
+              label={option.label}
+              onPress={() =>
+                updateProject(projectId, (current) => ({
+                  ...current,
+                  quality: option.value,
+                }))
+              }
+              selected={project.quality === option.value}
+              testId={`quality-${option.value}`}
+            />
+          ))}
+        </View>
+      </SectionCard>
+
+      {project.lastError ? (
+        <SectionCard title="Нужна повторная попытка" subtitle={project.lastError}>
+          <Text style={styles.helperText}>Попробуйте ещё раз — бесплатно или в pro режиме.</Text>
+        </SectionCard>
+      ) : null}
+
+      <View style={styles.footerActions}>
+        {isLicenseActive ? (
+          <AppButton
+            icon={<Sparkles color="#241B10" size={18} />}
+            label="Создать варианты"
+            subtitle={proSubtitle}
+            onPress={() => {
+              void handleGenerate("pro");
+            }}
+            testId="generate-licensed"
+          />
+        ) : (
+          <>
+            <AppButton
+              icon={<Sparkles color={appTheme.colors.text} size={18} />}
+              label="Попробовать бесплатно"
+              subtitle="1 вариант · низкое качество"
+              onPress={() => {
+                void handleGenerate("free");
+              }}
+              testId="generate-free"
+              variant="secondary"
+            />
+            <AppButton
+              icon={<Sparkles color="#241B10" size={18} />}
+              label={`Создать про · ${cost} кр.`}
+              subtitle={proSubtitle}
+              onPress={() => {
+                void handleGenerate("pro");
+              }}
+              testId="generate-variants"
+            />
+          </>
+        )}
+        {project.variants.length > 0 ? (
+          <AppButton
+            icon={<FolderOpen color={appTheme.colors.text} size={18} />}
+            label="Открыть последние варианты"
+            onPress={() =>
+              router.push({
+                pathname: "/project/[projectId]/results",
+                params: { projectId },
+              })
+            }
+            testId="open-results"
+            variant="secondary"
+          />
+        ) : null}
+      </View>
+    </AppScrollScreen>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    gap: 20,
+    paddingTop: 12,
+  },
+  previewImage: {
+    width: "100%",
+    height: 260,
+    borderRadius: appTheme.radii.xl,
+    backgroundColor: appTheme.colors.surfaceAlt,
+  },
+  ruleBanner: {
+    gap: 6,
+    padding: 16,
+    borderRadius: appTheme.radii.lg,
+    backgroundColor: appTheme.colors.backgroundElevated,
+  },
+  ruleBannerTitle: {
+    color: appTheme.colors.accentStrong,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  ruleBannerText: {
+    color: appTheme.colors.text,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  templateBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: appTheme.radii.pill,
+    backgroundColor: appTheme.colors.accentSoft,
+  },
+  templateBadgeText: {
+    color: appTheme.colors.accentStrong,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  buttonRow: {
+    gap: 12,
+  },
+  chipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  examplesWrap: {
+    gap: 6,
+  },
+  exampleText: {
+    color: appTheme.colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  helperText: {
+    color: appTheme.colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  footerActions: {
+    gap: 12,
+    marginBottom: 8,
+  },
+});
