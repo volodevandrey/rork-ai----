@@ -1,6 +1,5 @@
 import { router, Stack } from "expo-router";
 import Constants from "expo-constants";
-import * as Application from "expo-application";
 import { Coins, KeyRound, ShieldCheck } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -16,10 +15,11 @@ export default function SettingsScreen() {
   const isLicenseActive = useLicenseStore((s) => s.isActive);
   const daysLeft = useLicenseStore((s) => s.daysLeft);
   const appVersion = Constants.expoConfig?.version ?? "0.0.0";
-  const buildNumber =
-    Application.nativeBuildVersion
-    ?? Constants.expoConfig?.ios?.buildNumber
-    ?? "0";
+  const buildNumber = String(
+    Constants.expoConfig?.ios?.buildNumber
+    ?? Constants.expoConfig?.android?.versionCode
+    ?? 0,
+  );
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} testId="settings-screen">
