@@ -1,7 +1,6 @@
-import { router, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { Check, Sparkles } from "lucide-react-native";
-import { useCallback } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { AppButton } from "@/components/ui/AppButton";
 import { AppScrollScreen } from "@/components/ui/Screen";
@@ -41,30 +40,6 @@ const creditPackages: CreditPackage[] = [
 
 export default function ShopScreen() {
   const credits = useCreditsStore((state) => state.credits);
-  const addCredits = useCreditsStore((state) => state.addCredits);
-
-  const handlePurchase = useCallback(
-    async (creditPackage: CreditPackage) => {
-      try {
-        console.log("[shop] test purchase", creditPackage.id, creditPackage.credits);
-        await addCredits(creditPackage.credits);
-        Alert.alert(
-          "Оплата будет добавлена в следующем обновлении",
-          `${creditPackage.credits} кредитов уже зачислены для тестирования.`,
-          [
-            {
-              text: "Готово",
-              onPress: () => router.back(),
-            },
-          ],
-        );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Не удалось зачислить кредиты.";
-        Alert.alert("Ошибка", message);
-      }
-    },
-    [addCredits],
-  );
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} testId="shop-screen">
@@ -126,10 +101,9 @@ export default function ShopScreen() {
               </View>
 
               <AppButton
-                label={`Купить за ${creditPackage.price}`}
-                onPress={() => {
-                  void handlePurchase(creditPackage);
-                }}
+                disabled
+                label="Покупки временно недоступны"
+                onPress={() => {}}
                 testId={`buy-${creditPackage.id}`}
               />
             </View>

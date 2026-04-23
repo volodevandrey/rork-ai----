@@ -72,6 +72,40 @@ function appendSnippet(currentValue: string, snippet: string): string {
   return `${trimmedValue}, ${trimmedSnippet}`;
 }
 
+function parseSnippetTokens(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function hasSnippet(currentValue: string, snippet: string): boolean {
+  const target = snippet.trim();
+  if (!target) {
+    return false;
+  }
+
+  return parseSnippetTokens(currentValue).some((item) => item === target);
+}
+
+function toggleSnippet(currentValue: string, snippet: string): string {
+  const target = snippet.trim();
+  if (!target) {
+    return currentValue.trim();
+  }
+
+  const tokens = parseSnippetTokens(currentValue);
+  const existingIndex = tokens.findIndex((item) => item === target);
+
+  if (existingIndex >= 0) {
+    tokens.splice(existingIndex, 1);
+  } else {
+    tokens.push(target);
+  }
+
+  return tokens.join(", ");
+}
+
 export default function ProjectDesignScreen() {
   const params = useLocalSearchParams<{ projectId: string | string[] }>();
   const projectId = getSingleParam(params.projectId);
@@ -375,8 +409,8 @@ export default function ProjectDesignScreen() {
             <Chip
               key={material.id}
               label={material.label}
-              onPress={() => handleDescriptionChange(appendSnippet(project.description, material.snippet))}
-              selected={project.description.toLowerCase().includes(material.snippet.toLowerCase())}
+              onPress={() => handleDescriptionChange(toggleSnippet(project.description, material.snippet))}
+              selected={hasSnippet(project.description, material.snippet)}
               testId={`material-${material.id}`}
             />
           ))}

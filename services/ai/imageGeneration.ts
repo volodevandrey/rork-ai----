@@ -145,8 +145,9 @@ async function requestOpenAIVariant(params: {
   strategySubtitle: string;
   projectId: string;
   strategyId: string;
+  projectMode: ProjectItem["mode"];
 }): Promise<VariantItem> {
-  const { prompt, sourceBase64, strategyTitle, strategySubtitle, projectId, strategyId } = params;
+  const { prompt, sourceBase64, strategyTitle, strategySubtitle, projectId, strategyId, projectMode } = params;
   const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -158,6 +159,8 @@ async function requestOpenAIVariant(params: {
   formData.append("prompt", prompt);
   formData.append("n", "1");
   formData.append("size", "1024x1024");
+  // Для эскизов снижаем "цепляние" за исходный контур, чтобы получить более реалистичный рендер.
+  formData.append("input_fidelity", projectMode === "sketch" ? "low" : "high");
 
   appendImageToFormData({
     formData,
@@ -310,6 +313,7 @@ async function requestVariant(params: {
         strategySubtitle: strategy.subtitle,
         projectId: project.id,
         strategyId: strategy.id,
+        projectMode: project.mode,
       });
     } catch (error) {
       console.log("[imageGeneration] OpenAI failed, fallback to toolkit");
