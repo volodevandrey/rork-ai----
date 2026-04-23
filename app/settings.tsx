@@ -1,4 +1,6 @@
 import { router, Stack } from "expo-router";
+import Constants from "expo-constants";
+import * as Application from "expo-application";
 import { Coins, KeyRound, ShieldCheck } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -13,6 +15,11 @@ export default function SettingsScreen() {
   const credits = useCreditsStore((state) => state.credits);
   const isLicenseActive = useLicenseStore((s) => s.isActive);
   const daysLeft = useLicenseStore((s) => s.daysLeft);
+  const appVersion = Constants.expoConfig?.version ?? "0.0.0";
+  const buildNumber =
+    Application.nativeBuildVersion
+    ?? Constants.expoConfig?.ios?.buildNumber
+    ?? "0";
 
   return (
     <AppScrollScreen contentContainerStyle={styles.content} testId="settings-screen">
@@ -84,6 +91,10 @@ export default function SettingsScreen() {
           <Text style={styles.listItem}>• Камера — чтобы сделать новое фото мебели</Text>
           <Text style={styles.listItem}>• Микрофон — чтобы надиктовать описание дизайна</Text>
         </View>
+      </SectionCard>
+
+      <SectionCard title="Версия приложения" subtitle="Для проверки установленного билда">
+        <Text style={styles.versionText}>{`Версия ${appVersion} (${buildNumber})`}</Text>
       </SectionCard>
     </AppScrollScreen>
   );
@@ -164,5 +175,10 @@ const styles = StyleSheet.create({
     color: appTheme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
+  },
+  versionText: {
+    color: appTheme.colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

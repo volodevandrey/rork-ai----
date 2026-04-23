@@ -34,6 +34,41 @@ interface BufferLike {
   from(input: string, encoding: string): Uint8Array;
 }
 
+const REQUEST_TIMEOUT_MS = 90_000;
+
+class RequestTimeoutError extends Error {
+  constructor(service: "openai" | "toolkit") {
+    super(`${service} timeout`);
+    this.name = "RequestTimeoutError";
+  }
+}
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs: number,
+  service: "openai" | "toolkit",
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new RequestTimeoutError(service);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function getToolkitImageEditUrl(): string {
   return new URL(
     "/images/edit/",
@@ -172,13 +207,18 @@ async function requestOpenAIVariant(params: {
 
   console.log("[imageGeneration] requesting OpenAI variant", strategyTitle);
 
-  const response = await fetch("https://api.openai.com/v1/images/edits", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
+  const response = await fetchWithTimeout(
+    "https://api.openai.com/v1/images/edits",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: formData,
     },
-    body: formData,
-  });
+    REQUEST_TIMEOUT_MS,
+    "openai",
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -230,21 +270,34 @@ async function requestToolkitVariant(params: {
     quality,
   });
 
-  const response = await fetch(getToolkitImageEditUrl(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      prompt,
-      images: [
-        { type: "image", image: sourceBase64 },
-        ...(referenceBase64 ? [{ type: "image", image: referenceBase64 }] : []),
-      ],
-      aspectRatio: "1:1",
-      quality,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      getToolkitImageEditUrl(),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          images: [
+            { type: "image", image: sourceBase64 },
+            ...(referenceBase64 ? [{ type: "image", image: referenceBase64 }] : []),
+          ],
+          aspectRatio: "1:1",
+          quality,
+        }),
+      },
+      REQUEST_TIMEOUT_MS,
+      "toolkit",
+    );
+  } catch (error) {
+    if (error instanceof RequestTimeoutError) {
+      console.log("Toolkit timeout 90s, generation failed");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -316,6 +369,9 @@ async function requestVariant(params: {
         projectMode: project.mode,
       });
     } catch (error) {
+      if (error instanceof RequestTimeoutError) {
+        console.log("OpenAI timeout 90s, switching to Toolkit fallback");
+      }
       console.log("[imageGeneration] OpenAI failed, fallback to toolkit");
       console.log("[imageGeneration] OpenAI fallback reason", error);
     }
@@ -323,16 +379,21 @@ async function requestVariant(params: {
     console.log("[imageGeneration] no OpenAI key, using toolkit directly");
   }
 
-  return requestToolkitVariant({
-    prompt,
-    sourceBase64,
-    quality,
-    referenceBase64,
-    strategyTitle: strategy.title,
-    strategySubtitle: strategy.subtitle,
-    projectId: project.id,
-    strategyId: strategy.id,
-  });
+  try {
+    return await requestToolkitVariant({
+      prompt,
+      sourceBase64,
+      quality,
+      referenceBase64,
+      strategyTitle: strategy.title,
+      strategySubtitle: strategy.subtitle,
+      projectId: project.id,
+      strategyId: strategy.id,
+    });
+  } catch (error) {
+    console.log("[imageGeneration] toolkit failed after OpenAI fallback", error);
+    throw new Error("Не удалось создать изображение. Попробуйте ещё раз или проверьте подключение к интернету.");
+  }
 }
 
 export async function generateProjectVariants(params: {
