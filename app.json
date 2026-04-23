@@ -21,7 +21,8 @@
         "NSCameraUsageDescription": "Приложение использует камеру чтобы сфотографировать мебель или комнату и создать реалистичную визуализацию.",
         "NSPhotoLibraryUsageDescription": "Приложение открывает галерею чтобы загрузить фото мебели или эскиз для создания визуализации.",
         "NSMicrophoneUsageDescription": "Приложение использует микрофон чтобы пользователь мог надиктовать описание дизайна голосом вместо ввода текста вручную.",
-        "NSPhotoLibraryAddUsageDescription": "Приложение сохраняет готовые визуализации в галерею чтобы поделиться результатом с клиентом или сохранить для себя."
+        "NSPhotoLibraryAddUsageDescription": "Приложение сохраняет готовые визуализации в галерею чтобы поделиться результатом с клиентом или сохранить для себя.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,7 +30,17 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0F0E0C"
       },
-      "package": "com.renderai.app"
+      "package": "com.renderai.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -54,6 +65,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "67a0af2c-5ca5-48ac-86e8-e393e1c1cdb3"
+      }
     }
   }
 }
