@@ -1,3 +1,4 @@
+﻿import * as ImageManipulator from "expo-image-manipulator";
 import { buildVariantPrompt, getVariantStrategies } from "@/services/ai/promptBuilder";
 import { persistBase64Image } from "@/services/storage/fileStorage";
 import {
@@ -197,13 +198,10 @@ async function requestOpenAIVariant(params: {
   // Для эскизов снижаем "цепляние" за исходный контур, чтобы получить более реалистичный рендер.
   formData.append("input_fidelity", projectMode === "sketch" ? "low" : "high");
 
-  appendImageToFormData({
-    formData,
-    fieldName: "image",
-    base64: sourceBase64,
-    mimeType: "image/png",
-    fileNamePrefix: `variant-source-${strategyId}`,
-  });
+  const dataUri = `data:image/png;base64,${sanitizeBase64(sourceBase64)}`;
+  const resized = await ImageManipulator.manipulateAsync(dataUri, [{ resize: { width: 1024 } }], { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true });
+  const compressedBase64 = resized.base64 ?? sourceBase64;
+  appendImageToFormData({ formData, fieldName: "image", base64: compressedBase64, mimeType: "image/jpeg", fileNamePrefix: `variant-source-${strategyId}` });
 
   console.log("[imageGeneration] requesting OpenAI variant", strategyTitle);
 
