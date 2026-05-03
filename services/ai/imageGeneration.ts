@@ -427,31 +427,14 @@ export async function generateProjectVariants(params: {
 
   let completedVariants = 0;
 
-  const variants = await Promise.all(
-    strategies.map(async (_, index) => {
-      console.log("[imageGeneration] scheduling variant", index + 1, "of", strategies.length);
-
-      const variant = await requestVariant({
-        project,
-        strictness,
-        strategyIndex: index,
-        sourceBase64,
-        mode,
-        quality,
-        referenceBase64,
-        referenceVariantTitle,
-      });
-
-      completedVariants += 1;
-      onProgress?.(
-        `Создан вариант ${completedVariants} из ${strategies.length}: ${variant.title}`,
-        completedVariants + 2,
-        totalSteps,
-      );
-
-      return variant;
-    }),
-  );
+  const variants: VariantItem[] = [];
+  for (let index = 0; index < strategies.length; index++) {
+    console.log("[imageGeneration] sequential variant", index + 1, "of", strategies.length);
+    const variant = await requestVariant({ project, strictness, strategyIndex: index, sourceBase64, mode, quality, referenceBase64, referenceVariantTitle });
+    variants.push(variant);
+    completedVariants += 1;
+    onProgress?.(`Создан вариант ${completedVariants} из ${strategies.length}: ${variant.title}`, completedVariants + 2, totalSteps);
+  }
 
   console.log("[imageGeneration] project completed", project.id, variants.length);
   return variants;
