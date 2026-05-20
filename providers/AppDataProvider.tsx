@@ -14,6 +14,7 @@ import {
   ProjectItem,
   ProjectMode,
   StoredImage,
+  Strictness,
   TemplateItem,
   VariantItem,
 } from "@/types/app";
@@ -149,16 +150,13 @@ export const [AppDataProvider, useAppData] = createContextHook(() => {
 
       console.log("[AppDataProvider] delete project", projectId);
 
-      // Собираем ВСЕ URI картинок для удаления
       const imageUris = new Set<string>();
       imageUris.add(project.sourceImage.uri);
 
-      // Текущие варианты
       for (const variant of project.variants) {
         imageUris.add(variant.image.uri);
       }
 
-      // Варианты из истории
       for (const session of project.history) {
         for (const variant of session.variants) {
           imageUris.add(variant.image.uri);
@@ -242,7 +240,12 @@ export const [AppDataProvider, useAppData] = createContextHook(() => {
   }, []);
 
   const saveGeneratedVariants = useCallback(
-    (projectId: string, variants: VariantItem[], lastError: string | null = null) => {
+    (
+      projectId: string,
+      variants: VariantItem[],
+      lastError: string | null = null,
+      strictness: Strictness | null = null,
+    ) => {
       updateProject(projectId, (project) => ({
         ...project,
         status: lastError ? "error" : "ready",
@@ -255,7 +258,7 @@ export const [AppDataProvider, useAppData] = createContextHook(() => {
             description: project.description,
             styleId: project.styleId,
             zone: project.zone,
-            strictness: project.mode === "photo" ? "maximum" : "strict",
+            strictness: strictness ?? (project.mode === "photo" ? "maximum" : "strict"),
             variants,
           },
           ...project.history,
