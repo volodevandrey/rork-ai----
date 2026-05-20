@@ -1,6 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { ImageQuality, ProjectItem, TemplateItem, VariantCount } from "@/types/app";
+import {
+  ChangeZone,
+  ImageQuality,
+  ProjectItem,
+  ProjectMode,
+  ProjectStatus,
+  Strictness,
+  StylePresetId,
+  TemplateItem,
+  VariantCount,
+} from "@/types/app";
 
 const PROJECTS_KEY = "@furniture-ai/projects";
 const TEMPLATES_KEY = "@furniture-ai/templates";
@@ -23,11 +33,120 @@ function parseImageQuality(value: unknown): ImageQuality {
   return "medium";
 }
 
-function normalizeProject(project: Partial<ProjectItem>): ProjectItem {
+function parseProjectMode(value: unknown): ProjectMode {
+  if (value === "photo" || value === "sketch") {
+    return value;
+  }
+
+  return "photo";
+}
+
+function parseProjectStatus(value: unknown): ProjectStatus {
+  if (value === "draft" || value === "generating" || value === "ready" || value === "error") {
+    return value;
+  }
+
+  return "draft";
+}
+
+function parseStrictness(value: unknown): Strictness {
+  if (value === "standard" || value === "strict" || value === "maximum") {
+    return value;
+  }
+
+  return "strict";
+}
+
+function parseStylePresetId(value: unknown): StylePresetId | null {
+  if (
+    value === "modern" ||
+    value === "scandi" ||
+    value === "light" ||
+    value === "dark" ||
+    value === "premium" ||
+    value === "minimal"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function parseChangeZone(value: unknown): ChangeZone {
+  if (
+    value === "facades" ||
+    value === "countertop" ||
+    value === "backsplash" ||
+    value === "facades-countertop" ||
+    value === "all" ||
+    value === "walls" ||
+    value === "floor" ||
+    value === "ceiling" ||
+    value === "walls-furniture" ||
+    value === "full-room"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
+function parseString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function parseNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeProject(project: Partial<ProjectItem>): ProjectItem | null {
+  const now = Date.now();
+
+  if (!isRecord(project.sourceImage) || typeof project.sourceImage.uri !== "string") {
+    console.log("[appStorage] skip project without source image", project.id);
+    return null;
+  }
+
+  const mode = parseProjectMode(project.mode);
+  const variants = Array.isArray(project.variants) ? project.variants : [];
+  const history = Array.isArray(project.history) ? project.history : [];
+
   return {
-    ...(project as ProjectItem),
+    id: parseString(project.id, `project-${now}`),
+    title: parseString(project.title, mode === "photo" ? "Фото мебели" : "Эскиз мебели"),
+    mode,
+    sourceImage: {
+      uri: project.sourceImage.uri,
+      mimeType: parseString(project.sourceImage.mimeType, "image/jpeg"),
+      width: parseNumber(project.sourceImage.width, 1024),
+      height: parseNumber(project.sourceImage.height, 1024),
+    },
+    description: parseString(project.description),
+    voiceText: parseString(project.voiceText),
+    styleId: parseStylePresetId(project.styleId),
+    zone: parseChangeZone(project.zone),
+    selectedTemplateId: typeof project.selectedTemplateId === "string" ? project.selectedTemplateId : null,
+    status: parseProjectStatus(project.status),
+    variants,
     variantCount: parseVariantCount(project.variantCount),
     quality: parseImageQuality(project.quality),
+    history: history.map((session) => ({
+      ...session,
+      id: parseString(session.id, `session-${now}`),
+      createdAt: parseNumber(session.createdAt, now),
+      description: parseString(session.description),
+      styleId: parseStylePresetId(session.styleId),
+      zone: parseChangeZone(session.zone),
+      strictness: parseStrictness(session.strictness),
+      variants: Array.isArray(session.variants) ? session.variants : [],
+    })),
+    createdAt: parseNumber(project.createdAt, now),
+    updatedAt: parseNumber(project.updatedAt, now),
+    lastError: typeof project.lastError === "string" ? project.lastError : null,
   };
 }
 
@@ -55,7 +174,9 @@ async function saveJson<T>(key: string, value: T): Promise<void> {
 
 export async function loadProjects(): Promise<ProjectItem[]> {
   const projects = await loadJson<Partial<ProjectItem>[]>(PROJECTS_KEY, []);
-  return projects.map(normalizeProject);
+  return projects
+    .map(normalizeProject)
+    .filter((project): project is ProjectItem => project !== null);
 }
 
 export async function saveProjects(projects: ProjectItem[]): Promise<void> {
