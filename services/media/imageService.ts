@@ -11,12 +11,58 @@ const JPEG_QUALITY = 0.8;
 
 function getResizedDimensions(width: number, height: number): { width: number; height: number } {
   const longestSide = Math.max(width, height);
+
+  if (longestSide <= MAX_IMAGE_SIDE) {
+    return { width, height };
+  }
+
   const scale = MAX_IMAGE_SIDE / longestSide;
 
   return {
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale)),
   };
+}
+
+function sanitizeBase64DataUrl(dataUrl: string): string {
+  return dataUrl.split(",")[1] ?? "";
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Не удалось прочитать изображение."));
+    };
+    reader.onerror = () => reject(new Error("Не удалось прочитать изображение."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uriToBase64(uri: string): Promise<string> {
+  if (uri.startsWith("data:")) {
+    return sanitizeBase64DataUrl(uri);
+  }
+
+  if (Platform.OS === "web") {
+    const response = await fetch(uri);
+    if (!response.ok) {
+      throw new Error("Не удалось загрузить выбранное изображение.");
+    }
+
+    const blob = await response.blob();
+    const dataUrl = await blobToDataUrl(blob);
+    return sanitizeBase64DataUrl(dataUrl);
+  }
+
+  return FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
 }
 
 async function prepareImageForUpload(params: {
@@ -62,18 +108,11 @@ async function prepareImageForUpload(params: {
 
 async function createStoredImage(uri: string, width: number, height: number, fileNamePrefix: string): Promise<StoredImage> {
   const mimeType = "image/jpeg";
+  const base64 = await uriToBase64(uri);
 
-  if (Platform.OS === "web" || uri.startsWith("data:")) {
-    // Веб: URI уже data-url или blob
-    const base64 = uri.startsWith("data:") ? uri.split(",")[1] ?? "" : "";
-    const persistedUri = await persistBase64Image({ base64, mimeType, fileNamePrefix });
-    return { uri: persistedUri, mimeType, width, height };
+  if (!base64) {
+    throw new Error("Изображение пустое или не удалось прочитать файл.");
   }
-
-  // Нативные платформы: читаем файл как base64
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
 
   const persistedUri = await persistBase64Image({ base64, mimeType, fileNamePrefix });
   console.log("[imageService] stored image created", persistedUri);
