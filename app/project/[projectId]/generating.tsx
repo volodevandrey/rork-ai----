@@ -100,6 +100,7 @@ export default function GenerationScreen() {
   const fallbackQuality = project?.quality ?? "medium";
   const isCancelledRef = useRef<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const mode = useMemo(() => {
     return parseGenerationMode(modeParam);
   }, [modeParam]);
@@ -131,6 +132,7 @@ export default function GenerationScreen() {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      abortControllerRef.current?.abort();
     };
   }, []);
 
@@ -141,7 +143,6 @@ export default function GenerationScreen() {
     }));
   }, [variantCount]);
 
-  // Реальный прогресс — плавная анимация к текущему шагу
   useEffect(() => {
     const targetValue = progress.totalSteps > 0
       ? Math.min(progress.step / progress.totalSteps, 1)
@@ -154,7 +155,6 @@ export default function GenerationScreen() {
     }).start();
   }, [progress.step, progress.totalSteps, progressAnim]);
 
-  // Пульсация — показывает что процесс идёт
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
@@ -192,6 +192,10 @@ export default function GenerationScreen() {
         throw new Error("Проект не найден.");
       }
 
+      abortControllerRef.current?.abort();
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
       const sourceBase64 = await readBase64FromUri(project.sourceImage.uri);
       const referenceVariant = project.variants.find((item) => item.id === referenceVariantId) ?? null;
       const referenceBase64 = referenceVariant ? await readBase64FromUri(referenceVariant.image.uri) : undefined;
@@ -205,6 +209,7 @@ export default function GenerationScreen() {
         referenceBase64,
         referenceMimeType: referenceVariant?.image.mimeType,
         referenceVariantTitle: referenceVariant?.title,
+        signal: abortController.signal,
         onProgress: (stage, step, totalSteps) => {
           if (!isMountedRef.current || isCancelledRef.current) {
             return;
@@ -229,17 +234,19 @@ export default function GenerationScreen() {
       return variants;
     },
     onSuccess: (variants) => {
+      abortControllerRef.current = null;
       if (isCancelledRef.current || !isMountedRef.current) {
         return;
       }
 
-      saveGeneratedVariants(projectId, variants, null);
+      saveGeneratedVariants(projectId, variants, null, strictness);
       router.replace({
         pathname: "/project/[projectId]/results",
         params: { projectId },
       });
     },
     onError: (error) => {
+      abortControllerRef.current = null;
       if (error instanceof GenerationCancelledError || isCancelledRef.current) {
         return;
       }
@@ -280,6 +287,7 @@ export default function GenerationScreen() {
         onPress: () => {
           console.log("[GenerationScreen] generation cancelled by user", projectId);
           isCancelledRef.current = true;
+          abortControllerRef.current?.abort();
           restoreProjectState();
           router.back();
         },
@@ -287,7 +295,6 @@ export default function GenerationScreen() {
     ]);
   }, [projectId, restoreProjectState]);
 
-  // Ширина прогрессбара: реальный прогресс (10-95%) + лёгкая пульсация
   const progressWidth = Animated.add(
     progressAnim.interpolate({
       inputRange: [0, 1],
@@ -329,7 +336,7 @@ export default function GenerationScreen() {
           <ActivityIndicator color={appTheme.colors.accentStrong} size="large" />
           <Text style={styles.title}>Создание вариантов дизайна...</Text>
           <Text style={styles.description}>
-            Мы аккуратно обрабатываем изображение и сохраняем геометрию мебели.
+            Первый вариант может готовиться дольше остальных. Экран обновляет шаги по фактической готовности.
           </Text>
         </View>
 
