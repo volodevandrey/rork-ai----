@@ -1,4 +1,4 @@
-﻿import * as ImageManipulator from "expo-image-manipulator";
+import * as ImageManipulator from "expo-image-manipulator";
 import { buildVariantPrompt, getVariantStrategies } from "@/services/ai/promptBuilder";
 import { persistBase64Image } from "@/services/storage/fileStorage";
 import {
@@ -37,10 +37,25 @@ interface BufferLike {
 
 const REQUEST_TIMEOUT_MS = 90_000;
 
+type ImageService = "openai" | "toolkit";
+
 class RequestTimeoutError extends Error {
-  constructor(service: "openai" | "toolkit") {
+  constructor(service: ImageService) {
     super(`${service} timeout`);
     this.name = "RequestTimeoutError";
+  }
+}
+
+class RequestCancelledError extends Error {
+  constructor() {
+    super("Request cancelled");
+    this.name = "RequestCancelledError";
+  }
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new RequestCancelledError();
   }
 }
 
@@ -48,12 +63,23 @@ async function fetchWithTimeout(
   input: RequestInfo | URL,
   init: RequestInit,
   timeoutMs: number,
-  service: "openai" | "toolkit",
+  service: ImageService,
+  externalSignal?: AbortSignal,
 ): Promise<Response> {
+  throwIfAborted(externalSignal);
+
   const controller = new AbortController();
+  let timeoutTriggered = false;
   const timeoutId = setTimeout(() => {
+    timeoutTriggered = true;
     controller.abort();
   }, timeoutMs);
+
+  const abortFromExternalSignal = () => {
+    controller.abort();
+  };
+
+  externalSignal?.addEventListener("abort", abortFromExternalSignal, { once: true });
 
   try {
     return await fetch(input, {
@@ -62,11 +88,17 @@ async function fetchWithTimeout(
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new RequestTimeoutError(service);
+      if (timeoutTriggered) {
+        throw new RequestTimeoutError(service);
+      }
+
+      throw new RequestCancelledError();
     }
+
     throw error;
   } finally {
     clearTimeout(timeoutId);
+    externalSignal?.removeEventListener("abort", abortFromExternalSignal);
   }
 }
 
@@ -181,27 +213,37 @@ async function requestOpenAIVariant(params: {
   strategySubtitle: string;
   projectId: string;
   strategyId: string;
-  projectMode: ProjectItem["mode"];
+  signal?: AbortSignal;
 }): Promise<VariantItem> {
-  const { prompt, sourceBase64, strategyTitle, strategySubtitle, projectId, strategyId, projectMode } = params;
+  const { prompt, sourceBase64, strategyTitle, strategySubtitle, projectId, strategyId, signal } = params;
   const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
   if (!apiKey) {
     throw new Error("OpenAI API key is not configured.");
   }
 
+  throwIfAborted(signal);
+
   const formData = new FormData();
   formData.append("model", "gpt-image-1");
   formData.append("prompt", prompt);
   formData.append("n", "1");
   formData.append("size", "1024x1024");
-  // Для эскизов снижаем "цепляние" за исходный контур, чтобы получить более реалистичный рендер.
-  formData.append("input_fidelity", projectMode === "sketch" ? "low" : "high");
 
   const dataUri = `data:image/png;base64,${sanitizeBase64(sourceBase64)}`;
-  const resized = await ImageManipulator.manipulateAsync(dataUri, [{ resize: { width: 1024 } }], { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true });
+  const resized = await ImageManipulator.manipulateAsync(
+    dataUri,
+    [{ resize: { width: 1024 } }],
+    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+  );
   const compressedBase64 = resized.base64 ?? sourceBase64;
-  appendImageToFormData({ formData, fieldName: "image", base64: compressedBase64, mimeType: "image/jpeg", fileNamePrefix: `variant-source-${strategyId}` });
+  appendImageToFormData({
+    formData,
+    fieldName: "image",
+    base64: compressedBase64,
+    mimeType: "image/jpeg",
+    fileNamePrefix: `variant-source-${strategyId}`,
+  });
 
   console.log("[imageGeneration] requesting OpenAI variant", strategyTitle);
 
@@ -216,6 +258,7 @@ async function requestOpenAIVariant(params: {
     },
     REQUEST_TIMEOUT_MS,
     "openai",
+    signal,
   );
 
   if (!response.ok) {
@@ -251,6 +294,7 @@ async function requestToolkitVariant(params: {
   strategySubtitle: string;
   projectId: string;
   strategyId: string;
+  signal?: AbortSignal;
 }): Promise<VariantItem> {
   const {
     prompt,
@@ -261,6 +305,7 @@ async function requestToolkitVariant(params: {
     strategySubtitle,
     projectId,
     strategyId,
+    signal,
   } = params;
 
   console.log("[imageGeneration] requesting toolkit variant", strategyTitle, {
@@ -289,6 +334,7 @@ async function requestToolkitVariant(params: {
       },
       REQUEST_TIMEOUT_MS,
       "toolkit",
+      signal,
     );
   } catch (error) {
     if (error instanceof RequestTimeoutError) {
@@ -331,6 +377,7 @@ async function requestVariant(params: {
   quality: ImageQuality;
   referenceBase64?: string;
   referenceVariantTitle?: string;
+  signal?: AbortSignal;
 }): Promise<VariantItem> {
   const {
     project,
@@ -341,6 +388,7 @@ async function requestVariant(params: {
     quality,
     referenceBase64,
     referenceVariantTitle,
+    signal,
   } = params;
   const prompt = buildVariantPrompt({
     project,
@@ -354,6 +402,8 @@ async function requestVariant(params: {
     throw new Error("Стратегия генерации не найдена.");
   }
 
+  throwIfAborted(signal);
+
   if (process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
     try {
       console.log("[imageGeneration] trying OpenAI first, mode=", mode);
@@ -364,9 +414,13 @@ async function requestVariant(params: {
         strategySubtitle: strategy.subtitle,
         projectId: project.id,
         strategyId: strategy.id,
-        projectMode: project.mode,
+        signal,
       });
     } catch (error) {
+      if (error instanceof RequestCancelledError) {
+        throw error;
+      }
+
       if (error instanceof RequestTimeoutError) {
         console.log("OpenAI timeout 90s, switching to Toolkit fallback");
       }
@@ -387,8 +441,13 @@ async function requestVariant(params: {
       strategySubtitle: strategy.subtitle,
       projectId: project.id,
       strategyId: strategy.id,
+      signal,
     });
   } catch (error) {
+    if (error instanceof RequestCancelledError) {
+      throw error;
+    }
+
     console.log("[imageGeneration] toolkit failed after OpenAI fallback", error);
     throw new Error("Не удалось создать изображение. Попробуйте ещё раз или проверьте подключение к интернету.");
   }
@@ -405,6 +464,7 @@ export async function generateProjectVariants(params: {
   referenceMimeType?: string;
   referenceVariantTitle?: string;
   onProgress?: (stage: string, step: number, totalSteps: number) => void;
+  signal?: AbortSignal;
 }): Promise<VariantItem[]> {
   const {
     project,
@@ -416,21 +476,37 @@ export async function generateProjectVariants(params: {
     referenceBase64,
     referenceVariantTitle,
     onProgress,
+    signal,
   } = params;
   const strategies = getVariantStrategies().slice(0, variantCount);
   const totalSteps = variantCount + 2;
 
+  throwIfAborted(signal);
   onProgress?.("Подготовка изображения", 1, totalSteps);
   console.log("[imageGeneration] project start", project.id, project.mode, mode, strictness, quality, variantCount);
 
-  onProgress?.("Проверка сохранения формы", 2, totalSteps);
+  onProgress?.("Отправка запроса в сервис генерации", 2, totalSteps);
 
   let completedVariants = 0;
 
   const variants: VariantItem[] = [];
-  for (let index = 0; index < strategies.length; index++) {
-    console.log("[imageGeneration] sequential variant", index + 1, "of", strategies.length);
-    const variant = await requestVariant({ project, strictness, strategyIndex: index, sourceBase64, mode, quality, referenceBase64, referenceVariantTitle });
+  for (let index = 0; index < strategies.length; index += 1) {
+    throwIfAborted(signal);
+    const currentVariantNumber = index + 1;
+    console.log("[imageGeneration] sequential variant", currentVariantNumber, "of", strategies.length);
+    onProgress?.(`Генерация варианта ${currentVariantNumber} из ${strategies.length}`, Math.min(currentVariantNumber + 1, totalSteps), totalSteps);
+
+    const variant = await requestVariant({
+      project,
+      strictness,
+      strategyIndex: index,
+      sourceBase64,
+      mode,
+      quality,
+      referenceBase64,
+      referenceVariantTitle,
+      signal,
+    });
     variants.push(variant);
     completedVariants += 1;
     onProgress?.(`Создан вариант ${completedVariants} из ${strategies.length}: ${variant.title}`, completedVariants + 2, totalSteps);
@@ -445,8 +521,9 @@ export async function inpaintFurniture(params: {
   sourceMimeType?: string;
   maskBase64: string;
   description: string;
+  signal?: AbortSignal;
 }): Promise<VariantItem> {
-  const { sourceBase64, sourceMimeType = "image/png", maskBase64, description } = params;
+  const { sourceBase64, sourceMimeType = "image/png", maskBase64, description, signal } = params;
   const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
   const normalizedDescription = description.trim();
 
@@ -454,7 +531,8 @@ export async function inpaintFurniture(params: {
     throw new Error("Опишите, какую мебель нужно дорисовать.");
   }
 
-  // Попытка через OpenAI (если есть ключ)
+  throwIfAborted(signal);
+
   if (apiKey) {
     try {
       console.log("[imageGeneration] trying OpenAI inpaint");
@@ -485,13 +563,19 @@ export async function inpaintFurniture(params: {
         fileNamePrefix: "inpaint-mask",
       });
 
-      const response = await fetch("https://api.openai.com/v1/images/edits", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
+      const response = await fetchWithTimeout(
+        "https://api.openai.com/v1/images/edits",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: formData,
         },
-        body: formData,
-      });
+        REQUEST_TIMEOUT_MS,
+        "openai",
+        signal,
+      );
 
       if (response.ok) {
         const data = (await response.json()) as OpenAIImageEditResponse;
@@ -513,32 +597,44 @@ export async function inpaintFurniture(params: {
             createdAt: Date.now(),
           };
         }
+      } else {
+        const errorText = await response.text();
+        console.log("[imageGeneration] OpenAI inpaint failed", response.status, errorText);
       }
 
       console.log("[imageGeneration] OpenAI inpaint failed, fallback to toolkit");
     } catch (error) {
+      if (error instanceof RequestCancelledError) {
+        throw error;
+      }
+
       console.log("[imageGeneration] OpenAI inpaint error, fallback to toolkit", error);
     }
   } else {
     console.log("[imageGeneration] no OpenAI key, using toolkit for inpaint");
   }
 
-  // Фолбэк через Rork Toolkit
   const toolkitPrompt = `Add ${normalizedDescription} in the marked area, matching the style of existing furniture. Preserve everything else exactly as is.`;
 
-  const toolkitResponse = await fetch(getToolkitImageEditUrl(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt: toolkitPrompt,
-      images: [
-        { type: "image", image: sourceBase64 },
-        { type: "image", image: maskBase64 },
-      ],
-      aspectRatio: "1:1",
-      quality: "medium",
-    }),
-  });
+  const toolkitResponse = await fetchWithTimeout(
+    getToolkitImageEditUrl(),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: toolkitPrompt,
+        images: [
+          { type: "image", image: sourceBase64 },
+          { type: "image", image: maskBase64 },
+        ],
+        aspectRatio: "1:1",
+        quality: "medium",
+      }),
+    },
+    REQUEST_TIMEOUT_MS,
+    "toolkit",
+    signal,
+  );
 
   if (!toolkitResponse.ok) {
     const errorText = await toolkitResponse.text();
