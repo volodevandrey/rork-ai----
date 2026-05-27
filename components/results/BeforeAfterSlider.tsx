@@ -58,15 +58,15 @@ export function BeforeAfterSlider(props: BeforeAfterSliderProps) {
   return (
     <View style={styles.wrapper} testID={testId}>
       <View onLayout={handleLayout} style={styles.imageWrap} {...panResponder.panHandlers}>
-        <Image contentFit="cover" source={{ uri: beforeUri }} style={styles.imageLayer} />
+        <Image contentFit="contain" source={{ uri: beforeUri }} style={styles.imageLayer} />
         <View style={[styles.afterClip, { width: clippedWidth }]}>
           <Image
-            contentFit="cover"
+            contentFit="contain"
             source={{ uri: afterUri }}
             style={[styles.imageLayer, styles.clippedImage, { width }]}
           />
         </View>
-        <View style={[styles.divider, { left: sliderOffset }]}>
+        <View style={[styles.divider, { left: sliderOffset }]}> 
           <View style={styles.dividerHandle} />
         </View>
         <View pointerEvents="none" style={styles.labelRow}>
