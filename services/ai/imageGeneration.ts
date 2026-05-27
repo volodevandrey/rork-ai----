@@ -35,7 +35,15 @@ interface BufferLike {
   from(input: string, encoding: string): Uint8Array;
 }
 
+interface ImageGeometry {
+  width: number;
+  height: number;
+  aspectRatio: string;
+  openAiSize: "1024x1024" | "1024x1536" | "1536x1024";
+}
+
 const REQUEST_TIMEOUT_MS = 90_000;
+const TARGET_SOURCE_LONG_SIDE = 1536;
 
 type ImageService = "openai" | "toolkit";
 
@@ -177,6 +185,65 @@ function appendImageToFormData(params: {
   formData.append(fieldName, imageBlob, fileName);
 }
 
+function gcd(a: number, b: number): number {
+  let x = Math.max(1, Math.round(Math.abs(a)));
+  let y = Math.max(1, Math.round(Math.abs(b)));
+
+  while (y !== 0) {
+    const remainder = x % y;
+    x = y;
+    y = remainder;
+  }
+
+  return x;
+}
+
+function toAspectRatio(width: number, height: number): string {
+  const divisor = gcd(width, height);
+  return `${Math.round(width / divisor)}:${Math.round(height / divisor)}`;
+}
+
+function getOpenAiSize(width: number, height: number): ImageGeometry["openAiSize"] {
+  const ratio = width / Math.max(height, 1);
+
+  if (ratio >= 1.2) {
+    return "1536x1024";
+  }
+
+  if (ratio <= 0.83) {
+    return "1024x1536";
+  }
+
+  return "1024x1024";
+}
+
+function getProjectImageGeometry(project: ProjectItem): ImageGeometry {
+  const width = Math.max(1, project.sourceImage.width ?? 1024);
+  const height = Math.max(1, project.sourceImage.height ?? 1024);
+
+  return {
+    width,
+    height,
+    aspectRatio: toAspectRatio(width, height),
+    openAiSize: getOpenAiSize(width, height),
+  };
+}
+
+async function resizeSourceForUpload(sourceBase64: string, geometry: ImageGeometry): Promise<string> {
+  const dataUri = `data:image/png;base64,${sanitizeBase64(sourceBase64)}`;
+  const actions = geometry.width >= geometry.height
+    ? [{ resize: { width: TARGET_SOURCE_LONG_SIDE } }]
+    : [{ resize: { height: TARGET_SOURCE_LONG_SIDE } }];
+
+  const resized = await ImageManipulator.manipulateAsync(
+    dataUri,
+    actions,
+    { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+  );
+
+  return resized.base64 ?? sourceBase64;
+}
+
 async function buildVariantItem(params: {
   projectId: string;
   strategyId: string;
@@ -184,8 +251,9 @@ async function buildVariantItem(params: {
   strategySubtitle: string;
   generatedBase64: string;
   mimeType: string;
+  geometry: ImageGeometry;
 }): Promise<VariantItem> {
-  const { projectId, strategyId, strategyTitle, strategySubtitle, generatedBase64, mimeType } = params;
+  const { projectId, strategyId, strategyTitle, strategySubtitle, generatedBase64, mimeType, geometry } = params;
   const uri = await persistBase64Image({
     base64: generatedBase64,
     mimeType,
@@ -199,8 +267,8 @@ async function buildVariantItem(params: {
     image: {
       uri,
       mimeType,
-      width: 1024,
-      height: 1024,
+      width: geometry.width,
+      height: geometry.height,
     },
     createdAt: Date.now(),
   };
@@ -209,13 +277,14 @@ async function buildVariantItem(params: {
 async function requestOpenAIVariant(params: {
   prompt: string;
   sourceBase64: string;
+  geometry: ImageGeometry;
   strategyTitle: string;
   strategySubtitle: string;
   projectId: string;
   strategyId: string;
   signal?: AbortSignal;
 }): Promise<VariantItem> {
-  const { prompt, sourceBase64, strategyTitle, strategySubtitle, projectId, strategyId, signal } = params;
+  const { prompt, sourceBase64, geometry, strategyTitle, strategySubtitle, projectId, strategyId, signal } = params;
   const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -228,15 +297,9 @@ async function requestOpenAIVariant(params: {
   formData.append("model", "gpt-image-1");
   formData.append("prompt", prompt);
   formData.append("n", "1");
-  formData.append("size", "1024x1024");
+  formData.append("size", geometry.openAiSize);
 
-  const dataUri = `data:image/png;base64,${sanitizeBase64(sourceBase64)}`;
-  const resized = await ImageManipulator.manipulateAsync(
-    dataUri,
-    [{ resize: { width: 1024 } }],
-    { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-  );
-  const compressedBase64 = resized.base64 ?? sourceBase64;
+  const compressedBase64 = await resizeSourceForUpload(sourceBase64, geometry);
   appendImageToFormData({
     formData,
     fieldName: "image",
@@ -245,7 +308,7 @@ async function requestOpenAIVariant(params: {
     fileNamePrefix: `variant-source-${strategyId}`,
   });
 
-  console.log("[imageGeneration] requesting OpenAI variant", strategyTitle);
+  console.log("[imageGeneration] requesting OpenAI variant", strategyTitle, geometry.openAiSize, geometry.aspectRatio);
 
   const response = await fetchWithTimeout(
     "https://api.openai.com/v1/images/edits",
@@ -282,12 +345,14 @@ async function requestOpenAIVariant(params: {
     strategySubtitle,
     generatedBase64,
     mimeType: "image/png",
+    geometry,
   });
 }
 
 async function requestToolkitVariant(params: {
   prompt: string;
   sourceBase64: string;
+  geometry: ImageGeometry;
   quality: ImageQuality;
   referenceBase64?: string;
   strategyTitle: string;
@@ -299,6 +364,7 @@ async function requestToolkitVariant(params: {
   const {
     prompt,
     sourceBase64,
+    geometry,
     quality,
     referenceBase64,
     strategyTitle,
@@ -311,6 +377,7 @@ async function requestToolkitVariant(params: {
   console.log("[imageGeneration] requesting toolkit variant", strategyTitle, {
     hasReference: Boolean(referenceBase64),
     quality,
+    aspectRatio: geometry.aspectRatio,
   });
 
   let response: Response;
@@ -328,7 +395,7 @@ async function requestToolkitVariant(params: {
             { type: "image", image: sourceBase64 },
             ...(referenceBase64 ? [{ type: "image", image: referenceBase64 }] : []),
           ],
-          aspectRatio: "1:1",
+          aspectRatio: geometry.aspectRatio,
           quality,
         }),
       },
@@ -365,6 +432,7 @@ async function requestToolkitVariant(params: {
     strategySubtitle,
     generatedBase64,
     mimeType,
+    geometry,
   });
 }
 
@@ -373,6 +441,7 @@ async function requestVariant(params: {
   strictness: Strictness;
   strategyIndex: number;
   sourceBase64: string;
+  geometry: ImageGeometry;
   mode: GenerationMode;
   quality: ImageQuality;
   referenceBase64?: string;
@@ -384,6 +453,7 @@ async function requestVariant(params: {
     strictness,
     strategyIndex,
     sourceBase64,
+    geometry,
     mode,
     quality,
     referenceBase64,
@@ -410,6 +480,7 @@ async function requestVariant(params: {
       return await requestOpenAIVariant({
         prompt,
         sourceBase64,
+        geometry,
         strategyTitle: strategy.title,
         strategySubtitle: strategy.subtitle,
         projectId: project.id,
@@ -435,6 +506,7 @@ async function requestVariant(params: {
     return await requestToolkitVariant({
       prompt,
       sourceBase64,
+      geometry,
       quality,
       referenceBase64,
       strategyTitle: strategy.title,
@@ -480,10 +552,11 @@ export async function generateProjectVariants(params: {
   } = params;
   const strategies = getVariantStrategies().slice(0, variantCount);
   const totalSteps = variantCount + 2;
+  const geometry = getProjectImageGeometry(project);
 
   throwIfAborted(signal);
   onProgress?.("Подготовка изображения", 1, totalSteps);
-  console.log("[imageGeneration] project start", project.id, project.mode, mode, strictness, quality, variantCount);
+  console.log("[imageGeneration] project start", project.id, project.mode, mode, strictness, quality, variantCount, geometry);
 
   onProgress?.("Отправка запроса в сервис генерации", 2, totalSteps);
 
@@ -501,6 +574,7 @@ export async function generateProjectVariants(params: {
       strictness,
       strategyIndex: index,
       sourceBase64,
+      geometry,
       mode,
       quality,
       referenceBase64,
@@ -581,86 +655,4 @@ export async function inpaintFurniture(params: {
         const data = (await response.json()) as OpenAIImageEditResponse;
         const generatedBase64 = data.data?.[0]?.b64_json;
 
-        if (generatedBase64) {
-          const mimeType = "image/png";
-          const uri = await persistBase64Image({
-            base64: generatedBase64,
-            mimeType,
-            fileNamePrefix: "inpaint-result",
-          });
-
-          return {
-            id: createId("variant"),
-            title: "Дорисовано",
-            subtitle: normalizedDescription,
-            image: { uri, mimeType, width: 1024, height: 1024 },
-            createdAt: Date.now(),
-          };
-        }
-      } else {
-        const errorText = await response.text();
-        console.log("[imageGeneration] OpenAI inpaint failed", response.status, errorText);
-      }
-
-      console.log("[imageGeneration] OpenAI inpaint failed, fallback to toolkit");
-    } catch (error) {
-      if (error instanceof RequestCancelledError) {
-        throw error;
-      }
-
-      console.log("[imageGeneration] OpenAI inpaint error, fallback to toolkit", error);
-    }
-  } else {
-    console.log("[imageGeneration] no OpenAI key, using toolkit for inpaint");
-  }
-
-  const toolkitPrompt = `Add ${normalizedDescription} in the marked area, matching the style of existing furniture. Preserve everything else exactly as is.`;
-
-  const toolkitResponse = await fetchWithTimeout(
-    getToolkitImageEditUrl(),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: toolkitPrompt,
-        images: [
-          { type: "image", image: sourceBase64 },
-          { type: "image", image: maskBase64 },
-        ],
-        aspectRatio: "1:1",
-        quality: "medium",
-      }),
-    },
-    REQUEST_TIMEOUT_MS,
-    "toolkit",
-    signal,
-  );
-
-  if (!toolkitResponse.ok) {
-    const errorText = await toolkitResponse.text();
-    console.log("[imageGeneration] toolkit inpaint failed", toolkitResponse.status, errorText);
-    throw new Error("Не удалось дорисовать мебель. Попробуйте ещё раз.");
-  }
-
-  const toolkitData = (await toolkitResponse.json()) as ToolkitImageEditResponse;
-  const generatedBase64 = toolkitData.image?.base64Data;
-  const mimeType = toolkitData.image?.mimeType ?? "image/png";
-
-  if (!generatedBase64) {
-    throw new Error("Сервис не вернул изображение для дорисовки.");
-  }
-
-  const uri = await persistBase64Image({
-    base64: generatedBase64,
-    mimeType,
-    fileNamePrefix: "inpaint-result",
-  });
-
-  return {
-    id: createId("variant"),
-    title: "Дорисовано",
-    subtitle: normalizedDescription,
-    image: { uri, mimeType, width: 1024, height: 1024 },
-    createdAt: Date.now(),
-  };
-}
+      ...
