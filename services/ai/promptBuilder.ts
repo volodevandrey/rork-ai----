@@ -88,6 +88,59 @@ export function getVariantStrategies() {
   return variantStrategies;
 }
 
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? "").toLowerCase().replace(/ё/g, "е");
+}
+
+function hasAny(text: string, keywords: string[]): boolean {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function getFurnitureUnderstanding(project: ProjectItem): string {
+  const text = normalizeText([project.title, project.description, project.voiceText].filter(Boolean).join(" "));
+
+  if (hasAny(text, ["кухн", "мойк", "духов", "вароч", "фартук", "столешниц", "верхние шкаф", "нижние шкаф", "пенал кух"])) {
+    return `FURNITURE UNDERSTANDING:
+Detected furniture type: kitchen furniture / kitchen cabinet system.
+Structural reading: preserve the exact kitchen run, upper cabinet row, lower cabinet row, countertop line, backsplash area, tall units, appliance openings, visible side panels, plinth/base line and all cabinet module divisions.
+Critical preservation: do not move sink/cooktop/appliance openings, do not change the cabinet grid, do not change countertop height, do not change the camera angle.`;
+  }
+
+  if (hasAny(text, ["шкаф", "гардероб", "купе", "платян", "распашн", "прихож", "пенал", "шкафчик"])) {
+    return `FURNITURE UNDERSTANDING:
+Detected furniture type: wardrobe / tall cabinet system.
+Structural reading: preserve the tall outer silhouette, left and right side panels, visible depth, vertical dividers, shelf levels, door zones, base line, top line and perspective angle.
+Critical preservation: keep every vertical divider and side panel in the same position; keep shelf count and shelf heights unchanged; do not make the wardrobe deeper, wider, straighter or more symmetrical than the source.`;
+  }
+
+  if (hasAny(text, ["стеллаж", "полк", "полки", "открытые секц", "книжн", "ниша", "ячейк"])) {
+    return `FURNITURE UNDERSTANDING:
+Detected furniture type: open shelving / rack system.
+Structural reading: preserve every horizontal shelf, vertical upright, open cell, side panel, back panel line, depth line and perspective angle.
+Critical preservation: keep the number of shelves and open cells unchanged; keep all horizontal shelf lines aligned with the source; do not add decorative items inside shelves unless explicitly requested.`;
+  }
+
+  if (hasAny(text, ["тумб", "комод", "ящик", "консоль", "тв зона", "тв-тумб", "tv"])) {
+    return `FURNITURE UNDERSTANDING:
+Detected furniture type: cabinet / drawer unit / TV unit.
+Structural reading: preserve the outer box, facade grid, drawer lines, door gaps, side panels, legs or plinth and all visible proportions.
+Critical preservation: keep facade and drawer grid unchanged; keep outer proportions and visible side depth unchanged; do not add or remove handles, legs or drawers unless requested.`;
+  }
+
+  if (hasAny(text, ["стол", "рабочее место", "письмен", "компьютерн"])) {
+    return `FURNITURE UNDERSTANDING:
+Detected furniture type: desk / workstation furniture.
+Structural reading: preserve tabletop outline, supports, side panels, drawer blocks, shelves and all visible perspective lines.
+Critical preservation: keep tabletop size and angle unchanged; keep supports, drawer blocks and shelves in the same positions; do not change the viewing angle.`;
+  }
+
+  return `FURNITURE UNDERSTANDING:
+Detected furniture type: unknown from user text. You must infer it visually from the uploaded image before rendering.
+Visual analysis task before generation: identify whether the object is a kitchen, wardrobe, shelving, cabinet, desk, vanity or another furniture item. Then preserve its exact structural scheme.
+Structural reading required: locate the outer silhouette, visible side panels, vertical dividers, horizontal shelves, door/drawer fronts, base line, top line, depth lines and perspective angle directly from the image.
+Critical preservation: keep all detected furniture construction lines in the same visual positions. If uncertain, preserve the source image geometry instead of inventing a clearer or prettier design.`;
+}
+
 function getStyleInstruction(styleId: StylePresetId | null): string {
   if (!styleId) {
     return "Стиль явно не выбран. Сохрани нейтральную, дорогую и аккуратную подачу.";
@@ -143,6 +196,7 @@ export function buildVariantPrompt(params: {
 
   return [
     systemPrompt,
+    getFurnitureUnderstanding(project),
     `Mode: ${project.mode === "photo" ? "real furniture photo repaint" : "sketch to photorealistic render"}.`,
     `User request in Russian: ${project.description || project.voiceText || "Сделать красиво и аккуратно."}`,
     getStyleInstruction(project.styleId),
@@ -151,6 +205,7 @@ export function buildVariantPrompt(params: {
     getMaximumStrictnessInstruction(strictness),
     strategy.direction,
     referenceInstruction,
+    "Before rendering, silently identify the furniture type and construction from the uploaded image, then keep that construction fixed.",
     "Final check before output: the generated image must keep the same camera, crop, perspective, furniture outline, vertical dividers, shelf lines, module grid and object positions as the uploaded source.",
     "Return only one final image.",
   ].join("\n\n");
