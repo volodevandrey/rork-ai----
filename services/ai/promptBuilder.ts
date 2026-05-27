@@ -15,9 +15,21 @@ const structuralLockRules = `STRICT STRUCTURAL LOCK:
 - Only change allowed finishes, materials, lighting, shadows and texture realism.
 - If any source line or edge is ambiguous, keep the closest possible original position instead of inventing a new design.`;
 
+const surfaceRepaintRules = `SURFACE REPAINT ONLY MODE:
+- Do not generate a new furniture object.
+- Do not reconstruct the room, cabinet, wardrobe, shelving, kitchen, walls or floor.
+- Treat the uploaded image as a fixed photograph/CAD underlay.
+- Keep the original contour, outline, perspective, camera, crop, vanishing lines, object boundaries and all construction seams.
+- Repaint only visible existing surfaces: facades, shelves, side panels, countertop, wall, floor or ceiling according to the selected change zone.
+- Preserve all edge positions exactly; only the pixels inside the existing surfaces may change material, color, texture, lighting and reflections.
+- Existing black sketch lines, cabinet gaps, shelf lines and divider lines must remain aligned in the same positions.
+- The result must look like the same exact object after material replacement, not a redesigned object.`;
+
 const photoSystemPrompt = `You are a professional interior photographer and CGI artist. Your task: repaint and restyle the furniture in the photo while keeping the exact geometry, camera angle and room layout.
 
 ${structuralLockRules}
+
+${surfaceRepaintRules}
 
 Output quality requirements:
 - Photorealistic result indistinguishable from a real photo
@@ -36,6 +48,8 @@ const sketchSystemPrompt = `You are a professional CGI artist converting hand-dr
 Primary task: convert the existing sketch/draft into a believable real-world render while preserving the sketch structure as a construction blueprint.
 
 ${structuralLockRules}
+
+${surfaceRepaintRules}
 
 Output quality requirements:
 - Photorealistic result with natural camera look and physically plausible lighting
@@ -151,16 +165,16 @@ function getStyleInstruction(styleId: StylePresetId | null): string {
 
 function getZoneInstruction(zone: ChangeZone): string {
   const instructions: Record<ChangeZone, string> = {
-    facades: "Change ONLY cabinet facades and visible front finishes. Keep countertop, backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
-    countertop: "Change ONLY the countertop. Keep cabinet fronts, backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
-    backsplash: "Change ONLY the backsplash. Keep cabinet fronts, countertop, walls, floor, ceiling and all furniture geometry exactly as is.",
-    "facades-countertop": "Change ONLY cabinet facades and countertop. Keep backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
-    all: "Change all allowed visible finishes in the current interior while preserving layout, room architecture, object positions and geometry exactly as is.",
-    walls: "Change ONLY walls and wallpaper. Keep all furniture, floor and ceiling exactly as is.",
-    floor: "Change ONLY the floor. Keep all furniture, walls and ceiling exactly as is.",
-    ceiling: "Change ONLY the ceiling. Keep furniture, walls and floor exactly as is.",
-    "walls-furniture": "Change walls and furniture only. Keep floor and ceiling exactly as is.",
-    "full-room": "Transform allowed visible finishes across the room in one cohesive style, but preserve the exact room architecture, furniture layout, perspective and object positions.",
+    facades: "SURFACE REPAINT ONLY. Change ONLY existing cabinet facade surfaces and visible front finishes. Keep every contour, shelf line, divider line, gap, countertop, backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
+    countertop: "SURFACE REPAINT ONLY. Change ONLY the existing countertop surface. Keep cabinet fronts, backsplash, walls, floor, ceiling, edges, seams and all furniture geometry exactly as is.",
+    backsplash: "SURFACE REPAINT ONLY. Change ONLY the existing backsplash surface. Keep cabinet fronts, countertop, walls, floor, ceiling, edges, seams and all furniture geometry exactly as is.",
+    "facades-countertop": "SURFACE REPAINT ONLY. Change ONLY existing cabinet facade surfaces and the existing countertop surface. Keep backsplash, walls, floor, ceiling, edges, seams and all furniture geometry exactly as is.",
+    all: "SURFACE REPAINT ONLY. Change only visible existing furniture/room surfaces while preserving layout, room architecture, object positions, contours, construction seams and geometry exactly as is.",
+    walls: "SURFACE REPAINT ONLY. Change ONLY existing walls and wallpaper. Keep all furniture, floor, ceiling, contours, shadows and perspective exactly as is.",
+    floor: "SURFACE REPAINT ONLY. Change ONLY the existing floor surface. Keep all furniture, walls, ceiling, contours, shadows and perspective exactly as is.",
+    ceiling: "SURFACE REPAINT ONLY. Change ONLY the existing ceiling surface. Keep furniture, walls, floor, contours, shadows and perspective exactly as is.",
+    "walls-furniture": "SURFACE REPAINT ONLY. Change only existing wall and furniture surfaces. Keep floor, ceiling, contours, construction seams, object positions and perspective exactly as is.",
+    "full-room": "SURFACE REPAINT ONLY. Transform allowed visible finishes across the room in one cohesive style, but preserve the exact room architecture, furniture layout, contours, seams, perspective and object positions.",
   };
 
   return `Зона изменения: ${getZoneTitle(zone)}. ${instructions[zone]}`;
@@ -168,7 +182,7 @@ function getZoneInstruction(zone: ChangeZone): string {
 
 function getMaximumStrictnessInstruction(strictness: Strictness): string {
   if (strictness !== "maximum") {
-    return "Structural preservation is required.";
+    return "Structural preservation is required. Use surface repaint only; do not reconstruct the object.";
   }
 
   return [
@@ -176,6 +190,7 @@ function getMaximumStrictnessInstruction(strictness: Strictness): string {
     "Treat the uploaded image like a CAD underlay/reference trace.",
     "Every shelf, vertical divider, side panel, outline edge and perspective line must remain in the same visual position.",
     "Do not improve the design by changing proportions. Do not make the object more symmetrical. Do not correct perspective.",
+    "Use surface repaint only: change materials and colors on existing surfaces without changing contours.",
     "The after image must be suitable for an exact before/after overlay comparison.",
   ].join("\n");
 }
@@ -207,8 +222,9 @@ export function buildVariantPrompt(params: {
     getMaximumStrictnessInstruction(strictness),
     strategy.direction,
     referenceInstruction,
+    "Rendering method: surface repaint/material replacement over the existing source image. Do not create a new object or new layout.",
     "Before rendering, use the vision analysis and the uploaded image to identify the furniture type and construction, then keep that construction fixed.",
-    "Final check before output: the generated image must keep the same camera, crop, perspective, furniture outline, vertical dividers, shelf lines, module grid and object positions as the uploaded source.",
+    "Final check before output: the generated image must keep the same camera, crop, perspective, furniture outline, vertical dividers, shelf lines, module grid, contour and object positions as the uploaded source.",
     "Return only one final image.",
   ].join("\n\n");
 }
