@@ -13,6 +13,10 @@ import appTheme from "@/constants/theme";
 interface BeforeAfterSliderProps {
   beforeUri: string;
   afterUri: string;
+  beforeWidth?: number;
+  beforeHeight?: number;
+  afterWidth?: number;
+  afterHeight?: number;
   testId?: string;
 }
 
@@ -20,11 +24,25 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function getDisplayHeight(width: number, imageWidth?: number, imageHeight?: number): number {
+  if (width <= 0) {
+    return 420;
+  }
+
+  if (!imageWidth || !imageHeight || imageWidth <= 0 || imageHeight <= 0) {
+    return 420;
+  }
+
+  const aspectRatio = imageHeight / imageWidth;
+  return clamp(Math.round(width * aspectRatio), 260, 520);
+}
+
 export function BeforeAfterSlider(props: BeforeAfterSliderProps) {
-  const { beforeUri, afterUri, testId } = props;
+  const { beforeUri, afterUri, beforeWidth, beforeHeight, afterWidth, afterHeight, testId } = props;
   const [width, setWidth] = useState<number>(0);
   const [position, setPosition] = useState<number>(0.5);
 
+  const displayHeight = getDisplayHeight(width, beforeWidth ?? afterWidth, beforeHeight ?? afterHeight);
   const sliderOffset = width * position;
   const clippedWidth = Math.max(sliderOffset, 0);
 
@@ -57,11 +75,11 @@ export function BeforeAfterSlider(props: BeforeAfterSliderProps) {
 
   return (
     <View style={styles.wrapper} testID={testId}>
-      <View onLayout={handleLayout} style={styles.imageWrap} {...panResponder.panHandlers}>
-        <Image contentFit="contain" source={{ uri: beforeUri }} style={styles.imageLayer} />
-        <View style={[styles.afterClip, { width: clippedWidth }]}>
+      <View onLayout={handleLayout} style={[styles.imageWrap, { height: displayHeight }]} {...panResponder.panHandlers}>
+        <Image contentFit="cover" source={{ uri: beforeUri }} style={styles.imageLayer} />
+        <View style={[styles.afterClip, { width: clippedWidth }]}> 
           <Image
-            contentFit="contain"
+            contentFit="cover"
             source={{ uri: afterUri }}
             style={[styles.imageLayer, styles.clippedImage, { width }]}
           />
@@ -88,7 +106,6 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   imageWrap: {
-    height: 420,
     borderRadius: appTheme.radii.xl,
     overflow: "hidden",
     backgroundColor: appTheme.colors.surfaceAlt,
