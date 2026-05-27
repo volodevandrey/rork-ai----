@@ -31,6 +31,17 @@ interface OpenAIImageEditResponse {
   };
 }
 
+interface OpenAIVisionResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+  error?: {
+    message?: string;
+  };
+}
+
 interface BufferLike {
   from(input: string, encoding: string): Uint8Array;
 }
@@ -43,7 +54,9 @@ interface ImageGeometry {
 }
 
 const REQUEST_TIMEOUT_MS = 90_000;
+const VISION_TIMEOUT_MS = 35_000;
 const TARGET_SOURCE_LONG_SIDE = 1536;
+const VISION_SOURCE_LONG_SIDE = 768;
 
 type ImageService = "openai" | "toolkit";
 
@@ -229,19 +242,151 @@ function getProjectImageGeometry(project: ProjectItem): ImageGeometry {
   };
 }
 
-async function resizeSourceForUpload(sourceBase64: string, geometry: ImageGeometry): Promise<string> {
+async function resizeBase64Image(params: {
+  sourceBase64: string;
+  geometry: ImageGeometry;
+  longSide: number;
+  compress: number;
+}): Promise<string> {
+  const { sourceBase64, geometry, longSide, compress } = params;
   const dataUri = `data:image/png;base64,${sanitizeBase64(sourceBase64)}`;
   const actions = geometry.width >= geometry.height
-    ? [{ resize: { width: TARGET_SOURCE_LONG_SIDE } }]
-    : [{ resize: { height: TARGET_SOURCE_LONG_SIDE } }];
+    ? [{ resize: { width: longSide } }]
+    : [{ resize: { height: longSide } }];
 
   const resized = await ImageManipulator.manipulateAsync(
     dataUri,
     actions,
-    { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+    { compress, format: ImageManipulator.SaveFormat.JPEG, base64: true },
   );
 
   return resized.base64 ?? sourceBase64;
+}
+
+async function resizeSourceForUpload(sourceBase64: string, geometry: ImageGeometry): Promise<string> {
+  return resizeBase64Image({
+    sourceBase64,
+    geometry,
+    longSide: TARGET_SOURCE_LONG_SIDE,
+    compress: 0.9,
+  });
+}
+
+function getFallbackVisionAnalysis(project: ProjectItem): string {
+  return [
+    "VISION ANALYSIS FALLBACK:",
+    "No separate vision analysis was available. Infer the furniture type directly from the uploaded image before rendering.",
+    `Project mode: ${project.mode}.`,
+    "Identify the furniture category, outer silhouette, visible side panels, vertical dividers, horizontal shelves, doors, drawers, countertop lines, base line, top line, depth lines and perspective angle.",
+    "Preserve the detected construction exactly. If uncertain, keep the source geometry instead of inventing a clearer design.",
+  ].join("\n");
+}
+
+function sanitizeVisionText(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 1800);
+}
+
+async function analyzeFurnitureWithVision(params: {
+  project: ProjectItem;
+  sourceBase64: string;
+  geometry: ImageGeometry;
+  signal?: AbortSignal;
+}): Promise<string> {
+  const { project, sourceBase64, geometry, signal } = params;
+  const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+
+  if (!apiKey) {
+    return getFallbackVisionAnalysis(project);
+  }
+
+  try {
+    throwIfAborted(signal);
+    const visionBase64 = await resizeBase64Image({
+      sourceBase64,
+      geometry,
+      longSide: VISION_SOURCE_LONG_SIDE,
+      compress: 0.75,
+    });
+
+    const response = await fetchWithTimeout(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: process.env.EXPO_PUBLIC_OPENAI_VISION_MODEL ?? "gpt-4o-mini",
+          temperature: 0,
+          max_tokens: 450,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a furniture technologist and interior visualization assistant. Analyze the uploaded image only for furniture type and construction geometry. Do not be creative.",
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: [
+                    "Analyze this furniture image for image-to-image rendering.",
+                    "Return concise text with:",
+                    "1. detected furniture type;",
+                    "2. visible construction elements;",
+                    "3. vertical lines/dividers;",
+                    "4. horizontal shelves/levels;",
+                    "5. side panels/depth/perspective;",
+                    "6. what must not move during photorealistic rendering.",
+                    "Focus on preserving geometry, not style.",
+                  ].join("\n"),
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/jpeg;base64,${sanitizeBase64(visionBase64)}`,
+                    detail: "low",
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+      VISION_TIMEOUT_MS,
+      "openai",
+      signal,
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("[imageGeneration] vision analysis failed", response.status, errorText);
+      return getFallbackVisionAnalysis(project);
+    }
+
+    const data = (await response.json()) as OpenAIVisionResponse;
+    const content = sanitizeVisionText(data.choices?.[0]?.message?.content ?? "");
+
+    if (!content) {
+      return getFallbackVisionAnalysis(project);
+    }
+
+    return [`VISION ANALYSIS:", content].join("\n");
+  } catch (error) {
+    if (error instanceof RequestCancelledError) {
+      throw error;
+    }
+
+    console.log("[imageGeneration] vision analysis skipped", error);
+    return getFallbackVisionAnalysis(project);
+  }
 }
 
 async function buildVariantItem(params: {
@@ -442,6 +587,7 @@ async function requestVariant(params: {
   strategyIndex: number;
   sourceBase64: string;
   geometry: ImageGeometry;
+  visionAnalysis: string;
   mode: GenerationMode;
   quality: ImageQuality;
   referenceBase64?: string;
@@ -454,6 +600,7 @@ async function requestVariant(params: {
     strategyIndex,
     sourceBase64,
     geometry,
+    visionAnalysis,
     mode,
     quality,
     referenceBase64,
@@ -465,6 +612,7 @@ async function requestVariant(params: {
     strictness,
     strategyIndex,
     referenceVariantTitle,
+    visionAnalysis,
   });
   const strategy = getVariantStrategies()[strategyIndex];
 
@@ -551,14 +699,22 @@ export async function generateProjectVariants(params: {
     signal,
   } = params;
   const strategies = getVariantStrategies().slice(0, variantCount);
-  const totalSteps = variantCount + 2;
+  const totalSteps = variantCount + 3;
   const geometry = getProjectImageGeometry(project);
 
   throwIfAborted(signal);
   onProgress?.("Подготовка изображения", 1, totalSteps);
   console.log("[imageGeneration] project start", project.id, project.mode, mode, strictness, quality, variantCount, geometry);
 
-  onProgress?.("Отправка запроса в сервис генерации", 2, totalSteps);
+  onProgress?.("Анализ конструкции мебели", 2, totalSteps);
+  const visionAnalysis = await analyzeFurnitureWithVision({
+    project,
+    sourceBase64,
+    geometry,
+    signal,
+  });
+
+  onProgress?.("Отправка запроса в сервис генерации", 3, totalSteps);
 
   let completedVariants = 0;
 
@@ -567,7 +723,7 @@ export async function generateProjectVariants(params: {
     throwIfAborted(signal);
     const currentVariantNumber = index + 1;
     console.log("[imageGeneration] sequential variant", currentVariantNumber, "of", strategies.length);
-    onProgress?.(`Генерация варианта ${currentVariantNumber} из ${strategies.length}`, Math.min(currentVariantNumber + 1, totalSteps), totalSteps);
+    onProgress?.(`Генерация варианта ${currentVariantNumber} из ${strategies.length}`, Math.min(currentVariantNumber + 2, totalSteps), totalSteps);
 
     const variant = await requestVariant({
       project,
@@ -575,6 +731,7 @@ export async function generateProjectVariants(params: {
       strategyIndex: index,
       sourceBase64,
       geometry,
+      visionAnalysis,
       mode,
       quality,
       referenceBase64,
@@ -583,7 +740,7 @@ export async function generateProjectVariants(params: {
     });
     variants.push(variant);
     completedVariants += 1;
-    onProgress?.(`Создан вариант ${completedVariants} из ${strategies.length}: ${variant.title}`, completedVariants + 2, totalSteps);
+    onProgress?.(`Создан вариант ${completedVariants} из ${strategies.length}: ${variant.title}`, completedVariants + 3, totalSteps);
   }
 
   console.log("[imageGeneration] project completed", project.id, variants.length);
@@ -615,7 +772,7 @@ export async function inpaintFurniture(params: {
       formData.append("model", "gpt-image-1");
       formData.append(
         "prompt",
-        `Add ${normalizedDescription} in the same style as existing furniture. Preserve all existing furniture exactly.`,
+        `Add ${normalizedDescription} in the same style as existing furniture. Preserve all existing furniture, camera angle, perspective, visible geometry and construction lines exactly.`,
       );
       formData.append("n", "1");
       formData.append("size", "1024x1024");
@@ -655,4 +812,33 @@ export async function inpaintFurniture(params: {
         const data = (await response.json()) as OpenAIImageEditResponse;
         const generatedBase64 = data.data?.[0]?.b64_json;
 
-      ...
+        if (generatedBase64) {
+          const mimeType = "image/png";
+          const uri = await persistBase64Image({
+            base64: generatedBase64,
+            mimeType,
+            fileNamePrefix: "inpaint-result",
+          });
+
+          return {
+            id: createId("variant"),
+            title: "Дорисовано",
+            subtitle: normalizedDescription,
+            image: { uri, mimeType, width: 1024, height: 1024 },
+            createdAt: Date.now(),
+          };
+        }
+      } else {
+        const errorText = await response.text();
+        console.log("[imageGeneration] OpenAI inpaint failed", response.status, errorText);
+      }
+    } catch (error) {
+      if (error instanceof RequestCancelledError) {
+        throw error;
+      }
+      console.log("[imageGeneration] OpenAI inpaint fallback", error);
+    }
+  }
+
+  throw new Error("Дорисовка временно недоступна. Попробуйте позже.");
+}
