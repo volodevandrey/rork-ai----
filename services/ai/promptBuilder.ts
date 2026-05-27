@@ -185,8 +185,9 @@ export function buildVariantPrompt(params: {
   strictness: Strictness;
   strategyIndex: number;
   referenceVariantTitle?: string;
+  visionAnalysis?: string;
 }): string {
-  const { project, strictness, strategyIndex, referenceVariantTitle } = params;
+  const { project, strictness, strategyIndex, referenceVariantTitle, visionAnalysis } = params;
   const strategy = variantStrategies[strategyIndex] ?? variantStrategies[0];
   const systemPrompt = project.mode === "photo" ? photoSystemPrompt : sketchSystemPrompt;
 
@@ -197,6 +198,7 @@ export function buildVariantPrompt(params: {
   return [
     systemPrompt,
     getFurnitureUnderstanding(project),
+    visionAnalysis?.trim() || "No separate vision analysis is available. Infer furniture construction from the uploaded image before rendering.",
     `Mode: ${project.mode === "photo" ? "real furniture photo repaint" : "sketch to photorealistic render"}.`,
     `User request in Russian: ${project.description || project.voiceText || "Сделать красиво и аккуратно."}`,
     getStyleInstruction(project.styleId),
@@ -205,7 +207,7 @@ export function buildVariantPrompt(params: {
     getMaximumStrictnessInstruction(strictness),
     strategy.direction,
     referenceInstruction,
-    "Before rendering, silently identify the furniture type and construction from the uploaded image, then keep that construction fixed.",
+    "Before rendering, use the vision analysis and the uploaded image to identify the furniture type and construction, then keep that construction fixed.",
     "Final check before output: the generated image must keep the same camera, crop, perspective, furniture outline, vertical dividers, shelf lines, module grid and object positions as the uploaded source.",
     "Return only one final image.",
   ].join("\n\n");
