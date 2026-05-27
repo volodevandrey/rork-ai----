@@ -6,16 +6,24 @@ import {
 } from "@/types/app";
 import { getStyleTitle, getZoneTitle } from "@/constants/design";
 
+const structuralLockRules = `STRICT STRUCTURAL LOCK:
+- Use the uploaded image as the exact structural blueprint.
+- Preserve the exact camera angle, perspective, framing, crop, furniture silhouette, object position, visible geometry, module divisions, vertical lines, horizontal shelf lines, side panels, depth, proportions and scale.
+- The output must align with the source image in a before/after slider.
+- Do not rotate, mirror, zoom, crop differently, move the furniture, change viewpoint, change lens, straighten perspective, or reinterpret the layout.
+- Do not add, remove, resize, merge or split shelves, partitions, drawers, doors, side panels, handles, legs, walls, ceiling, floor, background objects, or decorative items unless the user explicitly requests it.
+- Only change allowed finishes, materials, lighting, shadows and texture realism.
+- If any source line or edge is ambiguous, keep the closest possible original position instead of inventing a new design.`;
+
 const photoSystemPrompt = `You are a professional interior photographer and CGI artist. Your task: repaint and restyle the furniture in the photo while keeping the exact geometry, camera angle and room layout.
+
+${structuralLockRules}
 
 Output quality requirements:
 - Photorealistic result indistinguishable from a real photo
-- Warm soft lighting: LED strip lights under cabinets, recessed ceiling spotlights with warm glow
-- Deep perspective showing room corners and depth
+- Warm soft lighting only where lighting already exists or is naturally implied by the current furniture
 - Realistic reflections on glossy and glass surfaces
-- Natural living details: fruits, plants, dishes on countertops
 - Rich material textures: marble veins, wood grain, metal shine
-- Shot style: wide-angle interior photography, standing inside the room
 - Color grade: warm neutral tones, professional interior photo
 - Zero CGI plastic look, zero flat lighting, zero AI artifacts
 
@@ -23,29 +31,30 @@ Hard rules: preserve camera angle, furniture geometry, module count, room archit
 
 ABSOLUTE RULE: NEVER add any new objects, furniture, plants, fruits, decorations, dishes, vases or any items that do not exist in the original image. ONLY change colors, materials, textures and surfaces of existing furniture. If you add anything new — the result is wrong.`;
 
-const sketchSystemPrompt = `You are a professional CGI artist converting hand-drawn sketches and technical drafts into photorealistic interior renders.
+const sketchSystemPrompt = `You are a professional CGI artist converting hand-drawn sketches and technical drafts into photorealistic furniture renders.
 
-Primary task: turn the sketch/draft into a believable real-world interior photo, not a "repainted sketch".
+Primary task: convert the existing sketch/draft into a believable real-world render while preserving the sketch structure as a construction blueprint.
+
+${structuralLockRules}
 
 Output quality requirements:
 - Photorealistic result with natural camera look and physically plausible lighting
-- Warm soft lighting: LED strips, recessed spotlights, pendant lights
-- Real room depth and perspective, but interpreted naturally from the sketch
-- Rich realistic materials: marble, wood grain, glass, metal
+- Realistic material rendering: wood grain, stone, glass, metal, matte and glossy surfaces
 - Warm neutral professional color grade
-- Result must look like a real photo shot inside the room
+- Result must look like a real furniture/interior render based on the same exact drawing
 
 Interpretation rules for sketch mode:
-- Use sketch lines as guidance for layout and furniture placement, but do not preserve raw line-art texture
-- Prioritize realism and coherent interior rendering over strict pixel-level fidelity to sketch strokes
-- Keep the overall furniture configuration and proportions from the sketch
+- Use sketch lines as hard geometry guides, not loose inspiration.
+- Keep the same contour, same viewpoint, same visible sides, same module count, same shelves and same partitions.
+- Do not preserve raw line-art texture, but keep all structural lines aligned to the source.
+- Prioritize structural fidelity over creativity, decoration and redesign.
 
 ABSOLUTE RULE: NEVER add any new objects, furniture, plants, fruits, decorations, dishes, vases or any items that do not exist in the original image. ONLY change colors, materials, textures and surfaces of existing furniture. If you add anything new — the result is wrong.`;
 
 const strictnessLabels: Record<Strictness, string> = {
   standard: "Сохраняй форму внимательно",
   strict: "Сохраняй форму очень строго",
-  maximum: "Максимально строго сохраняй форму, ракурс и границы мебели",
+  maximum: "Максимально строго сохраняй форму, ракурс, линии, модульную сетку и границы мебели",
 };
 
 const variantStrategies = [
@@ -53,25 +62,25 @@ const variantStrategies = [
     id: "close",
     title: "Ближе к запросу",
     subtitle: "Максимально точное попадание в задачу",
-    direction: "Stay very close to the user's requested palette and material combination.",
+    direction: "Stay as close as possible to the source structure and to the user's requested palette and material combination. Structural fidelity has priority over visual creativity.",
   },
   {
     id: "lighter",
     title: "Светлее и мягче",
     subtitle: "Более лёгкая и спокойная версия",
-    direction: "Keep the same structure but make the design lighter, softer and more airy.",
+    direction: "Keep the exact same structure and make only the finishes lighter, softer and more airy.",
   },
   {
     id: "contrast",
     title: "Контрастнее",
     subtitle: "Чище контраст и современнее подача",
-    direction: "Keep the same geometry but create a more contrast, crisp and modern interpretation.",
+    direction: "Keep the exact same geometry and create a more contrast, crisp and modern material interpretation without changing layout.",
   },
   {
     id: "premium",
     title: "Дороже на вид",
     subtitle: "Тёплая премиальная подача без лишней вычурности",
-    direction: "Keep the same structure and make the result feel more premium with elegant, believable materials.",
+    direction: "Keep the exact same structure and make only the materials look more premium and believable.",
   },
 ] as const;
 
@@ -98,10 +107,24 @@ function getZoneInstruction(zone: ChangeZone): string {
     floor: "Change ONLY the floor. Keep all furniture, walls and ceiling exactly as is.",
     ceiling: "Change ONLY the ceiling. Keep furniture, walls and floor exactly as is.",
     "walls-furniture": "Change walls and furniture only. Keep floor and ceiling exactly as is.",
-    "full-room": "Transform entire room: walls, floor, ceiling and furniture in one cohesive style.",
+    "full-room": "Transform allowed visible finishes across the room in one cohesive style, but preserve the exact room architecture, furniture layout, perspective and object positions.",
   };
 
   return `Зона изменения: ${getZoneTitle(zone)}. ${instructions[zone]}`;
+}
+
+function getMaximumStrictnessInstruction(strictness: Strictness): string {
+  if (strictness !== "maximum") {
+    return "Structural preservation is required.";
+  }
+
+  return [
+    "MAXIMUM STRICTNESS ACTIVE:",
+    "Treat the uploaded image like a CAD underlay/reference trace.",
+    "Every shelf, vertical divider, side panel, outline edge and perspective line must remain in the same visual position.",
+    "Do not improve the design by changing proportions. Do not make the object more symmetrical. Do not correct perspective.",
+    "The after image must be suitable for an exact before/after overlay comparison.",
+  ].join("\n");
 }
 
 export function buildVariantPrompt(params: {
@@ -125,9 +148,10 @@ export function buildVariantPrompt(params: {
     getStyleInstruction(project.styleId),
     getZoneInstruction(project.zone),
     `Shape preservation level: ${strictnessLabels[strictness]}.`,
+    getMaximumStrictnessInstruction(strictness),
     strategy.direction,
     referenceInstruction,
-    "Do not add new furniture modules. Do not change the camera. Do not change room architecture. Keep edges aligned with the source.",
+    "Final check before output: the generated image must keep the same camera, crop, perspective, furniture outline, vertical dividers, shelf lines, module grid and object positions as the uploaded source.",
     "Return only one final image.",
   ].join("\n\n");
 }
