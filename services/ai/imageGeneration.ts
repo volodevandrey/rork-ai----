@@ -378,7 +378,7 @@ async function analyzeFurnitureWithVision(params: {
       return getFallbackVisionAnalysis(project);
     }
 
-    return [`VISION ANALYSIS:", content].join("\n");
+    return ["VISION ANALYSIS:", content].join("\n");
   } catch (error) {
     if (error instanceof RequestCancelledError) {
       throw error;
