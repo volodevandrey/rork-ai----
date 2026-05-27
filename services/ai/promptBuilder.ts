@@ -6,64 +6,91 @@ import {
 } from "@/types/app";
 import { getStyleTitle, getZoneTitle } from "@/constants/design";
 
-const structuralLockRules = `STRICT STRUCTURAL LOCK:
-- Use the uploaded image as the exact structural blueprint.
-- Preserve the exact camera angle, perspective, framing, crop, furniture silhouette, object position, visible geometry, module divisions, vertical lines, horizontal shelf lines, side panels, depth, proportions and scale.
-- The output must align with the source image in a before/after slider.
-- Do not rotate, mirror, zoom, crop differently, move the furniture, change viewpoint, change lens, straighten perspective, or reinterpret the layout.
-- Do not add, remove, resize, merge or split shelves, partitions, drawers, doors, side panels, handles, legs, walls, ceiling, floor, background objects, or decorative items unless the user explicitly requests it.
-- Only change allowed finishes, materials, lighting, shadows and texture realism.
-- If any source line or edge is ambiguous, keep the closest possible original position instead of inventing a new design.`;
+const furnitureRenderMasterPrompt = `Используй загруженное изображение мебели как СТРОГУЮ геометрическую основу будущего рендера.
 
-const surfaceRepaintRules = `SURFACE REPAINT ONLY MODE:
-- Do not generate a new furniture object.
-- Do not reconstruct the room, cabinet, wardrobe, shelving, kitchen, walls or floor.
-- Treat the uploaded image as a fixed photograph/CAD underlay.
-- Keep the original contour, outline, perspective, camera, crop, vanishing lines, object boundaries and all construction seams.
-- Repaint only visible existing surfaces: facades, shelves, side panels, countertop, wall, floor or ceiling according to the selected change zone.
-- Preserve all edge positions exactly; only the pixels inside the existing surfaces may change material, color, texture, lighting and reflections.
-- Existing black sketch lines, cabinet gaps, shelf lines and divider lines must remain aligned in the same positions.
-- The result must look like the same exact object after material replacement, not a redesigned object.`;
+КРИТИЧЕСКИ ВАЖНО:
+— Не менять ракурс камеры.
+— Не менять перспективу.
+— Не менять пропорции.
+— Не менять размеры модулей.
+— Не двигать линии, полки, фасады, перегородки, ящики и элементы конструкции.
+— Не дорисовывать новую мебель.
+— Не удалять существующие элементы.
+— При наложении исходника и результата все линии и контуры должны совпадать максимально точно.
 
-const photoSystemPrompt = `You are a professional interior photographer and CGI artist. Your task: repaint and restyle the furniture in the photo while keeping the exact geometry, camera angle and room layout.
+Разрешено изменять только:
+— материалы,
+— текстуры,
+— цвета,
+— освещение,
+— фотореалистичность,
+— качество поверхностей,
+— окружение,
+— уровень детализации.
 
-${structuralLockRules}
+Задача:
+Преобразовать эскиз/модель мебели в ультрареалистичный интерьерный рендер уровня премиальной мебельной визуализации.
 
-${surfaceRepaintRules}
+Требования к рендеру:
+— Максимально фотореалистичные материалы.
+— Реалистичная глубина теней.
+— Естественное мягкое интерьерное освещение.
+— Правильные отражения и микротекстуры.
+— Реалистичные кромки ЛДСП/МДФ.
+— Физически корректные материалы.
+— Эффект профессиональной интерьерной фотосъемки.
+— Качество как у дорогого мебельного каталога.
+— Чистая современная обстановка без визуального шума.
+— Сохранять исходную компоновку мебели 1:1.
 
-Output quality requirements:
-- Photorealistic result indistinguishable from a real photo
-- Warm soft lighting only where lighting already exists or is naturally implied by the current furniture
-- Realistic reflections on glossy and glass surfaces
-- Rich material textures: marble veins, wood grain, metal shine
-- Color grade: warm neutral tones, professional interior photo
-- Zero CGI plastic look, zero flat lighting, zero AI artifacts
+Если изображение схематичное или линейное:
+— аккуратно интерпретируй толщины материалов,
+— сохрани ВСЕ размеры и логику конструкции,
+— не изменяй расположение элементов.
 
-Hard rules: preserve camera angle, furniture geometry, module count, room architecture. Never redesign the scene.
+Если мебель частично обрезана или не полностью прорисована:
+— достраивай только очевидные части конструкции,
+— без изменения исходной логики.
 
-ABSOLUTE RULE: NEVER add any new objects, furniture, plants, fruits, decorations, dishes, vases or any items that do not exist in the original image. ONLY change colors, materials, textures and surfaces of existing furniture. If you add anything new — the result is wrong.`;
+Стиль рендера:
+— современный,
+— премиальный,
+— минималистичный,
+— архитектурная интерьерная визуализация,
+— реалистичная фотография на профессиональную камеру.
 
-const sketchSystemPrompt = `You are a professional CGI artist converting hand-drawn sketches and technical drafts into photorealistic furniture renders.
+Все параметры цветов, декоров, фасадов, столешниц, текстур и стилистики передаются отдельно и имеют приоритет над базовым стилем этого промта.`;
 
-Primary task: convert the existing sketch/draft into a believable real-world render while preserving the sketch structure as a construction blueprint.
+const photoSystemPrompt = `Используй загруженную фотографию мебели как строгую основу для фотореалистичного редизайна.
 
-${structuralLockRules}
+КРИТИЧЕСКИ ВАЖНО:
+— Не менять ракурс камеры.
+— Не менять перспективу.
+— Не менять пропорции.
+— Не менять размеры модулей.
+— Не двигать линии, полки, фасады, перегородки, ящики и элементы конструкции.
+— Не дорисовывать новую мебель.
+— Не удалять существующие элементы.
+— При наложении исходника и результата все линии и контуры должны совпадать максимально точно.
 
-${surfaceRepaintRules}
+Разрешено изменять только:
+— материалы,
+— текстуры,
+— цвета,
+— освещение,
+— фотореалистичность,
+— качество поверхностей.
 
-Output quality requirements:
-- Photorealistic result with natural camera look and physically plausible lighting
-- Realistic material rendering: wood grain, stone, glass, metal, matte and glossy surfaces
-- Warm neutral professional color grade
-- Result must look like a real furniture/interior render based on the same exact drawing
+Задача:
+Сделать премиальный реалистичный редизайн существующей мебели без изменения геометрии и композиции.
 
-Interpretation rules for sketch mode:
-- Use sketch lines as hard geometry guides, not loose inspiration.
-- Keep the same contour, same viewpoint, same visible sides, same module count, same shelves and same partitions.
-- Do not preserve raw line-art texture, but keep all structural lines aligned to the source.
-- Prioritize structural fidelity over creativity, decoration and redesign.
+Требования:
+— Фотореализм уровня интерьерной съемки.
+— Реалистичные тени, отражения, микротекстуры и кромки.
+— Чистая современная обстановка без визуального шума.
+— Сохранять исходную компоновку мебели 1:1.`;
 
-ABSOLUTE RULE: NEVER add any new objects, furniture, plants, fruits, decorations, dishes, vases or any items that do not exist in the original image. ONLY change colors, materials, textures and surfaces of existing furniture. If you add anything new — the result is wrong.`;
+const sketchSystemPrompt = furnitureRenderMasterPrompt;
 
 const strictnessLabels: Record<Strictness, string> = {
   standard: "Сохраняй форму внимательно",
@@ -76,25 +103,25 @@ const variantStrategies = [
     id: "close",
     title: "Ближе к запросу",
     subtitle: "Максимально точное попадание в задачу",
-    direction: "Stay as close as possible to the source structure and to the user's requested palette and material combination. Structural fidelity has priority over visual creativity.",
+    direction: "Не добавляй творческих изменений. Сделай один основной премиальный рендер строго по загруженной геометрии и пользовательским материалам.",
   },
   {
     id: "lighter",
     title: "Светлее и мягче",
     subtitle: "Более лёгкая и спокойная версия",
-    direction: "Keep the exact same structure and make only the finishes lighter, softer and more airy.",
+    direction: "Сохрани ту же конструкцию 1:1, но сделай материалы и освещение светлее, мягче и спокойнее.",
   },
   {
     id: "contrast",
     title: "Контрастнее",
     subtitle: "Чище контраст и современнее подача",
-    direction: "Keep the exact same geometry and create a more contrast, crisp and modern material interpretation without changing layout.",
+    direction: "Сохрани ту же конструкцию 1:1, но сделай подачу чище, контрастнее и современнее только за счет материалов, света и качества поверхностей.",
   },
   {
     id: "premium",
     title: "Дороже на вид",
     subtitle: "Тёплая премиальная подача без лишней вычурности",
-    direction: "Keep the exact same structure and make only the materials look more premium and believable.",
+    direction: "Сохрани ту же конструкцию 1:1, но сделай материалы, освещение и окружение визуально дороже и каталоговее.",
   },
 ] as const;
 
@@ -115,49 +142,48 @@ function getFurnitureUnderstanding(project: ProjectItem): string {
 
   if (hasAny(text, ["кухн", "мойк", "духов", "вароч", "фартук", "столешниц", "верхние шкаф", "нижние шкаф", "пенал кух"])) {
     return `FURNITURE UNDERSTANDING:
-Detected furniture type: kitchen furniture / kitchen cabinet system.
-Structural reading: preserve the exact kitchen run, upper cabinet row, lower cabinet row, countertop line, backsplash area, tall units, appliance openings, visible side panels, plinth/base line and all cabinet module divisions.
-Critical preservation: do not move sink/cooktop/appliance openings, do not change the cabinet grid, do not change countertop height, do not change the camera angle.`;
+Тип мебели: кухня / кухонная корпусная система.
+Сохрани строго: ряд верхних шкафов, ряд нижних шкафов, линию столешницы, фартук, пеналы, проемы техники, боковины, цоколь и все деления модулей.
+Нельзя двигать мойку, варочную панель, духовку, проемы техники, сетку фасадов и высоту столешницы.`;
   }
 
   if (hasAny(text, ["шкаф", "гардероб", "купе", "платян", "распашн", "прихож", "пенал", "шкафчик"])) {
     return `FURNITURE UNDERSTANDING:
-Detected furniture type: wardrobe / tall cabinet system.
-Structural reading: preserve the tall outer silhouette, left and right side panels, visible depth, vertical dividers, shelf levels, door zones, base line, top line and perspective angle.
-Critical preservation: keep every vertical divider and side panel in the same position; keep shelf count and shelf heights unchanged; do not make the wardrobe deeper, wider, straighter or more symmetrical than the source.`;
+Тип мебели: шкаф / гардеробная / высокий корпус.
+Сохрани строго: внешний силуэт, левую и правую боковины, видимую глубину, вертикальные перегородки, уровни полок, зоны дверей/фасадов, нижнюю и верхнюю линии, перспективу.
+Нельзя менять количество полок, высоты полок, позиции перегородок, глубину, ширину, симметрию и ракурс.`;
   }
 
   if (hasAny(text, ["стеллаж", "полк", "полки", "открытые секц", "книжн", "ниша", "ячейк"])) {
     return `FURNITURE UNDERSTANDING:
-Detected furniture type: open shelving / rack system.
-Structural reading: preserve every horizontal shelf, vertical upright, open cell, side panel, back panel line, depth line and perspective angle.
-Critical preservation: keep the number of shelves and open cells unchanged; keep all horizontal shelf lines aligned with the source; do not add decorative items inside shelves unless explicitly requested.`;
+Тип мебели: стеллаж / открытая система полок.
+Сохрани строго: каждую горизонтальную полку, вертикальную стойку, открытую ячейку, боковину, заднюю линию, глубину и перспективу.
+Нельзя добавлять декор внутрь полок, если пользователь явно не попросил.`;
   }
 
   if (hasAny(text, ["тумб", "комод", "ящик", "консоль", "тв зона", "тв-тумб", "tv"])) {
     return `FURNITURE UNDERSTANDING:
-Detected furniture type: cabinet / drawer unit / TV unit.
-Structural reading: preserve the outer box, facade grid, drawer lines, door gaps, side panels, legs or plinth and all visible proportions.
-Critical preservation: keep facade and drawer grid unchanged; keep outer proportions and visible side depth unchanged; do not add or remove handles, legs or drawers unless requested.`;
+Тип мебели: тумба / комод / ящичная секция / ТВ-зона.
+Сохрани строго: внешний короб, сетку фасадов, линии ящиков, зазоры дверей, боковины, ножки или цоколь и все пропорции.
+Нельзя добавлять или удалять ручки, ножки, ящики и фасады без прямой команды.`;
   }
 
   if (hasAny(text, ["стол", "рабочее место", "письмен", "компьютерн"])) {
     return `FURNITURE UNDERSTANDING:
-Detected furniture type: desk / workstation furniture.
-Structural reading: preserve tabletop outline, supports, side panels, drawer blocks, shelves and all visible perspective lines.
-Critical preservation: keep tabletop size and angle unchanged; keep supports, drawer blocks and shelves in the same positions; do not change the viewing angle.`;
+Тип мебели: стол / рабочее место.
+Сохрани строго: контур столешницы, опоры, боковины, тумбы, полки и все линии перспективы.
+Нельзя менять размер столешницы, угол, опоры, блоки ящиков и ракурс.`;
   }
 
   return `FURNITURE UNDERSTANDING:
-Detected furniture type: unknown from user text. You must infer it visually from the uploaded image before rendering.
-Visual analysis task before generation: identify whether the object is a kitchen, wardrobe, shelving, cabinet, desk, vanity or another furniture item. Then preserve its exact structural scheme.
-Structural reading required: locate the outer silhouette, visible side panels, vertical dividers, horizontal shelves, door/drawer fronts, base line, top line, depth lines and perspective angle directly from the image.
-Critical preservation: keep all detected furniture construction lines in the same visual positions. If uncertain, preserve the source image geometry instead of inventing a clearer or prettier design.`;
+Тип мебели не задан явно. Определи его визуально по загруженному изображению.
+Перед рендером найди внешний силуэт, боковины, вертикальные перегородки, горизонтальные полки, фасады/ящики, нижнюю линию, верхнюю линию, глубину и перспективу.
+Если есть сомнение — сохраняй геометрию исходника, а не выдумывай более красивую или понятную конструкцию.`;
 }
 
 function getStyleInstruction(styleId: StylePresetId | null): string {
   if (!styleId) {
-    return "Стиль явно не выбран. Сохрани нейтральную, дорогую и аккуратную подачу.";
+    return "Стиль явно не выбран. Используй современный премиальный минимализм и реалистичную интерьерную фотографию.";
   }
 
   return `Предпочтение по стилю: ${getStyleTitle(styleId)}.`;
@@ -165,16 +191,16 @@ function getStyleInstruction(styleId: StylePresetId | null): string {
 
 function getZoneInstruction(zone: ChangeZone): string {
   const instructions: Record<ChangeZone, string> = {
-    facades: "SURFACE REPAINT ONLY. Change ONLY existing cabinet facade surfaces and visible front finishes. Keep every contour, shelf line, divider line, gap, countertop, backsplash, walls, floor, ceiling and all furniture geometry exactly as is.",
-    countertop: "SURFACE REPAINT ONLY. Change ONLY the existing countertop surface. Keep cabinet fronts, backsplash, walls, floor, ceiling, edges, seams and all furniture geometry exactly as is.",
-    backsplash: "SURFACE REPAINT ONLY. Change ONLY the existing backsplash surface. Keep cabinet fronts, countertop, walls, floor, ceiling, edges, seams and all furniture geometry exactly as is.",
-    "facades-countertop": "SURFACE REPAINT ONLY. Change ONLY existing cabinet facade surfaces and the existing countertop surface. Keep backsplash, walls, floor, ceiling, edges, seams and all furniture geometry exactly as is.",
-    all: "SURFACE REPAINT ONLY. Change only visible existing furniture/room surfaces while preserving layout, room architecture, object positions, contours, construction seams and geometry exactly as is.",
-    walls: "SURFACE REPAINT ONLY. Change ONLY existing walls and wallpaper. Keep all furniture, floor, ceiling, contours, shadows and perspective exactly as is.",
-    floor: "SURFACE REPAINT ONLY. Change ONLY the existing floor surface. Keep all furniture, walls, ceiling, contours, shadows and perspective exactly as is.",
-    ceiling: "SURFACE REPAINT ONLY. Change ONLY the existing ceiling surface. Keep furniture, walls, floor, contours, shadows and perspective exactly as is.",
-    "walls-furniture": "SURFACE REPAINT ONLY. Change only existing wall and furniture surfaces. Keep floor, ceiling, contours, construction seams, object positions and perspective exactly as is.",
-    "full-room": "SURFACE REPAINT ONLY. Transform allowed visible finishes across the room in one cohesive style, but preserve the exact room architecture, furniture layout, contours, seams, perspective and object positions.",
+    facades: "Менять только материалы, цвет и качество поверхностей фасадов. Геометрию, размеры, зазоры, полки, перегородки, столешницу, стены, пол и потолок не менять.",
+    countertop: "Менять только материал, цвет и качество поверхности столешницы. Фасады, фартук, стены, пол, потолок и геометрию не менять.",
+    backsplash: "Менять только материал, цвет и качество поверхности фартука. Фасады, столешницу, стены, пол, потолок и геометрию не менять.",
+    "facades-countertop": "Менять только материалы, цвет и качество поверхностей фасадов и столешницы. Фартук, стены, пол, потолок и геометрию не менять.",
+    all: "Можно улучшить все видимые материалы мебели и окружения, но нельзя менять компоновку, размеры, ракурс, линии, полки, перегородки и модульную сетку.",
+    walls: "Менять только стены/обои. Мебель, пол, потолок, ракурс и контуры не менять.",
+    floor: "Менять только пол. Мебель, стены, потолок, ракурс и контуры не менять.",
+    ceiling: "Менять только потолок. Мебель, стены, пол, ракурс и контуры не менять.",
+    "walls-furniture": "Менять только материалы стен и мебели. Пол, потолок, ракурс, контуры, модульную сетку и конструктив не менять.",
+    "full-room": "Создать цельную премиальную интерьерную подачу, но сохранить архитектуру, мебель, компоновку, перспективу, ракурс, линии и позиции объектов.",
   };
 
   return `Зона изменения: ${getZoneTitle(zone)}. ${instructions[zone]}`;
@@ -182,16 +208,15 @@ function getZoneInstruction(zone: ChangeZone): string {
 
 function getMaximumStrictnessInstruction(strictness: Strictness): string {
   if (strictness !== "maximum") {
-    return "Structural preservation is required. Use surface repaint only; do not reconstruct the object.";
+    return "Сохранение геометрии обязательно: не менять ракурс, перспективу, пропорции, размеры модулей и линии конструкции.";
   }
 
   return [
     "MAXIMUM STRICTNESS ACTIVE:",
-    "Treat the uploaded image like a CAD underlay/reference trace.",
-    "Every shelf, vertical divider, side panel, outline edge and perspective line must remain in the same visual position.",
-    "Do not improve the design by changing proportions. Do not make the object more symmetrical. Do not correct perspective.",
-    "Use surface repaint only: change materials and colors on existing surfaces without changing contours.",
-    "The after image must be suitable for an exact before/after overlay comparison.",
+    "Загруженное изображение является технической геометрической основой рендера.",
+    "Все линии полок, перегородок, фасадов, ящиков, боковин, кромок, контуров и модульной сетки должны остаться на тех же местах.",
+    "Нельзя улучшать дизайн изменением пропорций, симметрии, перспективы или количества элементов.",
+    "При наложении исходника и результата все основные линии и контуры должны совпадать максимально точно.",
   ].join("\n");
 }
 
@@ -207,24 +232,24 @@ export function buildVariantPrompt(params: {
   const systemPrompt = project.mode === "photo" ? photoSystemPrompt : sketchSystemPrompt;
 
   const referenceInstruction = referenceVariantTitle
-    ? `Use the reference result called "${referenceVariantTitle}" only as style direction, but still preserve the original geometry from the first image.`
-    : "No reference variant is provided.";
+    ? `Референс "${referenceVariantTitle}" использовать только как направление стиля/материалов. Геометрию всегда брать из исходного загруженного изображения.`
+    : "Отдельный референс результата не задан.";
 
   return [
     systemPrompt,
     getFurnitureUnderstanding(project),
-    visionAnalysis?.trim() || "No separate vision analysis is available. Infer furniture construction from the uploaded image before rendering.",
-    `Mode: ${project.mode === "photo" ? "real furniture photo repaint" : "sketch to photorealistic render"}.`,
-    `User request in Russian: ${project.description || project.voiceText || "Сделать красиво и аккуратно."}`,
+    visionAnalysis?.trim() || "Отдельный vision-анализ недоступен. Перед рендером самостоятельно определи конструкцию мебели по загруженному изображению и сохрани её.",
+    `Режим: ${project.mode === "photo" ? "редизайн реального фото мебели" : "рендер эскиза/модели мебели по строгой геометрической основе"}.`,
+    `Запрос пользователя по цветам, декорам и дизайну: ${project.description || project.voiceText || "Сделать современный премиальный реалистичный рендер."}`,
     getStyleInstruction(project.styleId),
     getZoneInstruction(project.zone),
-    `Shape preservation level: ${strictnessLabels[strictness]}.`,
+    `Уровень сохранения формы: ${strictnessLabels[strictness]}.`,
     getMaximumStrictnessInstruction(strictness),
     strategy.direction,
     referenceInstruction,
-    "Rendering method: surface repaint/material replacement over the existing source image. Do not create a new object or new layout.",
-    "Before rendering, use the vision analysis and the uploaded image to identify the furniture type and construction, then keep that construction fixed.",
-    "Final check before output: the generated image must keep the same camera, crop, perspective, furniture outline, vertical dividers, shelf lines, module grid, contour and object positions as the uploaded source.",
-    "Return only one final image.",
+    "Главный метод: не свободная генерация новой мебели, а фотореалистичный рендер по загруженной геометрической основе.",
+    "Цвета, декоры, фасады, столешницы, текстуры и стилистика из запроса пользователя имеют приоритет над базовым стилем.",
+    "Финальная проверка: камера, перспектива, контур мебели, боковины, полки, перегородки, фасады, ящики, модульная сетка и позиции элементов должны соответствовать исходному изображению.",
+    "Верни только одно финальное изображение.",
   ].join("\n\n");
 }
