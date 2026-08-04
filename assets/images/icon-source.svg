@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="110" y1="90" x2="900" y2="930" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F7CFF"/>
+      <stop offset="0.55" stop-color="#7158F6"/>
+      <stop offset="1" stop-color="#B14ED4"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(720 270) rotate(135) scale(540)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".30"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="218" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="218" fill="url(#glow)"/>
+  <circle cx="799" cy="216" r="54" fill="#FFFFFF" fill-opacity=".96"/>
+  <circle cx="881" cy="342" r="27" fill="#FFFFFF" fill-opacity=".58"/>
+  <path d="M220 720V310c0-42 34-76 76-76h38c31 0 60 19 72 47l106 243 106-243c12-28 40-47 72-47h38c42 0 76 34 76 76v410c0 39-32 71-71 71s-71-32-71-71V463L582 646c-12 29-40 48-72 48s-60-19-72-48l-76-183v257c0 39-32 71-71 71s-71-32-71-71Z" fill="#FFFFFF"/>
+</svg>
