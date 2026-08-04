@@ -1,8 +1,8 @@
 {
   "expo": {
-    "owner": "volandev",
+    "owner": "volodevandrey",
     "name": "Истории MAX",
-    "slug": "istorii-max",
+    "slug": "volodevandreygmailcom",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -41,6 +41,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9034e424-8a84-46ed-879d-2386085b1bfa"
+      }
     }
   }
 }
