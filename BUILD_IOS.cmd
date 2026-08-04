@@ -46,7 +46,7 @@ if errorlevel 1 goto fail
 echo.
 echo [5/5] Building the iOS app and sending it to TestFlight...
 echo Enter Apple login and 2FA only in this window.
-call npx --yes testflight
+call npx --yes eas-cli@latest build --platform ios --profile production --auto-submit
 if errorlevel 1 goto fail
 
 echo.
