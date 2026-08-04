@@ -12,7 +12,6 @@ echo.
 
 where git >nul 2>nul
 if errorlevel 1 goto no_git
-
 where node >nul 2>nul
 if errorlevel 1 goto no_node
 
@@ -32,22 +31,20 @@ git clone --depth 1 "%REPO_URL%" "%APP_DIR%"
 if errorlevel 1 goto fail
 
 :run_build
-if not exist "%APP_DIR%\TESTFLIGHT.bat" goto no_build_file
-call "%APP_DIR%\TESTFLIGHT.bat"
+if not exist "%APP_DIR%\BUILD_IOS.cmd" goto no_build_file
+call "%APP_DIR%\BUILD_IOS.cmd"
 exit /b %errorlevel%
 
 :no_git
 echo ERROR: Git is not installed or not available in PATH.
-echo Install Git for Windows from https://git-scm.com/download/win
 goto fail
 
 :no_node
 echo ERROR: Node.js is not installed or not available in PATH.
-echo Install Node.js LTS from https://nodejs.org/
 goto fail
 
 :no_build_file
-echo ERROR: TESTFLIGHT.bat was not found after downloading the project.
+echo ERROR: BUILD_IOS.cmd was not found after downloading the project.
 goto fail
 
 :fail
