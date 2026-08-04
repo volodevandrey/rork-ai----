@@ -14,13 +14,30 @@
 
 Код, пароль и токен не отправляются на сторонний сервер. Соединение идёт напрямую к `api.oneme.ru:443` по TCP/TLS.
 
+## Установка на iPhone без Rork
+
+Rork не нужен. На Windows дважды нажмите `TESTFLIGHT.bat` в папке проекта.
+
+Сценарий сам:
+
+1. получает актуальный код из GitHub;
+2. устанавливает зависимости;
+3. предлагает войти в Expo;
+4. создаёт отдельный проект `@volandev/istorii-max`;
+5. собирает iOS-приложение;
+6. отправляет сборку в TestFlight.
+
+Пароли Expo, Apple ID и код 2FA вводятся только локально в открывшемся окне. После обработки Apple откройте TestFlight на iPhone и установите «Истории MAX».
+
 ## Важно
 
-Это не APK-эмулятор и не конвертер APK в IPA. APK содержит Android-код, который iOS не запускает. Здесь реализован отдельный iOS-интерфейс к протоколу MAX — это практичный вариант для нужной функции.
+Это не APK-эмулятор и не конвертер APK в IPA. APK содержит Android-код, который iOS не запускает. Здесь реализован отдельный iOS-интерфейс к протоколу MAX.
 
-Приложение **не работает в Expo Go и обычном предпросмотре Rork**, потому что использует нативный модуль `react-native-tcp-socket`. Для проверки нужен Development Build или TestFlight.
+Приложение не работает в Expo Go, потому что использует нативный модуль `react-native-tcp-socket`. Для проверки нужен Development Build или TestFlight.
 
 MAX может изменить закрытый протокол, после чего клиент потребуется обновить. Проект не связан с разработчиками MAX.
+
+Bundle ID: `com.volodevandrey.maxstories`. Старое приложение «РендерАИ» не перезаписывается.
 
 ## Проверка проекта
 
@@ -30,24 +47,6 @@ npm run typecheck
 npm run lint
 npm run doctor
 ```
-
-## Установка на iPhone через Rork / EAS
-
-Репозиторий привязан к существующему проекту Rork через `slug` и `extra.eas.projectId` в `app.json`.
-
-1. Дождаться синхронизации ветки `main` в Rork.
-2. Для первой проверки выбрать iOS Development Build. Expo Go использовать нельзя.
-3. Для TestFlight собрать профиль `production` и отправить его в App Store Connect.
-4. При первом запуске EAS создаст или попросит выбрать новую запись приложения для bundle ID `com.volodevandrey.maxstories`.
-
-Эквивалентные команды без интерфейса Rork:
-
-```bash
-npx eas-cli build --profile development --platform ios
-npx eas-cli build --profile production --platform ios --auto-submit
-```
-
-В `eas.json` намеренно нет старого `ascAppId`: прежняя запись App Store относилась к приложению «РендерАИ» и не должна быть перезаписана.
 
 ## Структура
 
