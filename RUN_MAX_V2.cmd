@@ -29,7 +29,7 @@ if errorlevel 1 goto fail
 
 :run
 echo Starting TestFlight build...
-call "%APP_DIR%\TESTFLIGHT.bat"
+call "%APP_DIR%\BUILD_IOS.cmd"
 exit /b %errorlevel%
 
 :no_git
